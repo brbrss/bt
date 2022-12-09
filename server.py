@@ -2,7 +2,7 @@ import socket
 import time
 import concurrent.futures
 import threading
-
+import conn_pool
 
 def exec_conn(conn):
     try:
@@ -44,35 +44,31 @@ class Server(object):
         self.port = self.soc.getsockname()[1]
         
         self.flag_run = True
-        self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
         self.conn_list = []
         self.lock = threading.Lock()
     
-    def start(self):
+    def start(self, pool):
         '''start server
 
             this function is blocking, should start in a separate thread'''
         #print("server starting at: ", self.soc.getsockname())
-        while self.flag_run:
-            conn,addr = self.soc.accept()
-            self.lock.acquire()
-            self.conn_list = [c for c in self.conn_list if c.fileno()!=-1]
-            self.conn_list.append(conn)
-            self.executor.submit(exec_conn,conn)
-            self.lock.release()
+        try:
+            while self.flag_run:
+                conn,addr = self.soc.accept()
+                print('received conn: ',addr)
+                self.lock.acquire()
+                pool.register(conn)
+
+                self.lock.release()
+        except Exception as err:
+            #print(err)
+            pass
+        print('server stopped')
         pass
 
     def stop(self):
         self.lock.acquire()
         self.flag_run = False
-        for conn in self.conn_list:
-            fileno = conn.fileno()
-            print('stop ',fileno)
-            if fileno != -1:
-                conn.shutdown(socket.SHUT_RDWR)
-                conn.close()
-        print('stopped connections: ',len(self.conn_list))
-        self.executor.shutdown()
         self.soc.close()
 
 def t():
@@ -80,10 +76,14 @@ def t():
 
 if __name__ == '__main__':
     server = Server(9999)
-    f = lambda : server.start()
-    executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
+    pool = conn_pool.ConnPool()
+    g = lambda: pool.run()
+    f = lambda : server.start(pool)
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
     executor.submit(f)
+    executor.submit(g)
     input('')
+    pool.close()
     server.stop()
     #executor.shutdown()
     
