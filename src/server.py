@@ -51,7 +51,6 @@ class Server(object):
         '''start server
 
             this function is blocking, should start in a separate thread'''
-        #print("server starting at: ", self.soc.getsockname())
         try:
             while self.flag_run:
                 conn,addr = self.soc.accept()
@@ -64,19 +63,17 @@ class Server(object):
             #print(err)
             pass
         print('server stopped')
-        pass
 
     def stop(self):
         self.lock.acquire()
         self.flag_run = False
         self.soc.close()
 
-def t():
-    time.sleep(9999)
+
 
 if __name__ == '__main__':
     server = Server(9999)
-    pool = conn_pool.ConnPool()
+    pool = conn_pool.ConnPool(conn_pool.ConnOperator)
     g = lambda: pool.run()
     f = lambda : server.start(pool)
     executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
@@ -85,5 +82,5 @@ if __name__ == '__main__':
     input('')
     pool.close()
     server.stop()
-    #executor.shutdown()
+    executor.shutdown()
     

@@ -6,7 +6,9 @@ import queue
 
 
 class ConnOperator(object):
-    '''Handles a single connection
+    '''Class for handling a single connection
+
+    Decides when to recv/send and what to do with data.
     '''
 
     def __init__(self):
@@ -15,21 +17,33 @@ class ConnOperator(object):
         #continue buffering from here
         self.write_pos = 0
         #check again in how many seconds
-        self.timeout = 100
+        self.timeout = 0.1
         #SelectorKey returned from selector
         self.key = None
         self.timestamp = 0 # force refresh check on first time
+        self.count = 0
     
     def parse(self,buf):
         '''Parses and process data received from connection, should also do any
         side effect(e.g. set write flag).
         
         Should handle incomplete data properly.'''
-
+        print('received: ',buf)
+        if buf==b'':
+            self.key.fileobj.shutdown(socket.SHUT_RDWR)
+            self.key.fileobj.close()
+        self.write_buf += bytes([self.count])
+        self.count += 1
         pass
 
     def write(self,conn):
-        new_pos = conn.send(self.write_buf[self.write_pos:])
+        try:
+            new_pos = conn.send(self.write_buf[self.write_pos:])
+        except Exception:
+            if self.key.fileobj.fileno() != -1:
+                self.key.fileobj.shutdown(socket.SHUT_RDWR)
+                self.key.fileobj.close()
+            return
         if new_pos == len(self.write_buf):
             self.write_buf = b''
             self.write_pos = 0
@@ -37,16 +51,18 @@ class ConnOperator(object):
             self.write_pos = new_pos
         return
 
-    def check_add_to_write(self):
+    def add_to_write(self):
         '''Automatically add things to write buffer.
         
         Should be called every a while. The exact wait time is set in timer'''
+        self.write_buf += bytes([self.count])
+        self.count +=1
         pass
     
     def check(self,newtime):
         '''Caller is responsible for providing timestamp from time.time()'''
         if newtime>self.timestamp+self.timeout:
-            self.check_add_to_write()
+            self.add_to_write()
             self.timestamp = newtime
         return
 
@@ -77,12 +93,13 @@ class ConnPool(object):
     Takes in sockets and handles using/closing sockets. 
     Outside code should not touch these sockets after registering.'''
 
-    def __init__(self):
+    def __init__(self, handlerClass):
         self.sel = selectors.DefaultSelector()
         self.conn_list = {}
         self.timeout = 1
         self.queue = queue.Queue()
         self.flag_run = True
+        self.handlerClass = handlerClass
 
     def _register(self,conn):
         ''' 
@@ -90,7 +107,7 @@ class ConnPool(object):
         '''
         conn.setblocking(False)
         name = conn.fileno()
-        user = ConnOperator()
+        user = self.handlerClass()
         evmask = mask(user)
         soc_key = self.sel.register(conn, evmask)
         user.key = soc_key
@@ -106,16 +123,24 @@ class ConnPool(object):
 
     def refresh_status(self):
         '''Refreshes read/write event mask for selector'''
+        for k in self.conn_list:
+            conn = self.conn_list[k].key.fileobj
+            if conn.fileno() == -1:
+                self.sel.unregister(conn)
         self.conn_list = {k:self.conn_list[k] for k in self.conn_list if self.conn_list[k].key.fileobj.fileno()!=-1}
-        for key in self.conn_list:
-            user = self.conn_list[key]
+
+        for k in self.conn_list:
+            user = self.conn_list[k]
             newmask = mask(user)
             if newmask != user.key.events:
-                newkey = self.sel.modify(key.fileobj,newmask,key.data)
+                newkey = self.sel.modify(user.key.fileobj,newmask,user.key.data)
                 user.key = newkey
         return
     
     def refresh_timeout(self):
+        if len(self.conn_list) == 0:
+            self.timeout = 10
+            return
         self.timeout = min([self.conn_list[key].timeout for key in self.conn_list])
         self.timeout = min(10,self.timeout)
 
@@ -135,7 +160,7 @@ class ConnPool(object):
                 data = conn.recv(1024)
                 self.conn_list[key.fd].parse(data)
             if ev& selectors.EVENT_WRITE:
-                self.conn_list[key].write(conn)
+                self.conn_list[key.fd].write(conn)
         self.refresh_status()
         newtime = time.time()
         for key in self.conn_list:
