@@ -1,5 +1,7 @@
 
-function encode(data) {
+const ben = {};
+
+ben.encode = function (data) {
     if (typeof data === 'string') {
         const sz = data.length;
         return String(sz) + ':' + data;
@@ -12,14 +14,15 @@ function encode(data) {
     else if (Array.isArray(data)) {
         let res = 'l';
         for (item of data) {
-            res += encode(item);
+            res += ben.encode(item);
         }
         res += 'e';
         return res;
     } else if (typeof data === 'object') {
         let res = 'd';
-        for (k in data) {
-            res += encode(k) + encode(data[k]);
+        const keys = Object.keys(data).sort();
+        for (k of keys) {
+            res += ben.encode(k) + ben.encode(data[k]);
         }
         res += 'e';
         return res;
@@ -29,4 +32,4 @@ function encode(data) {
 
 }
 
-module.exports = encode;
+module.exports = ben;

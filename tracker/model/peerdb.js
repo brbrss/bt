@@ -1,6 +1,6 @@
 
 function strname(ip, port) {
-    return ip + '' + port;
+    return ip + '>' + port; // > to prevent ipv6 colon confusion
 }
 
 class PeerDb {
@@ -30,7 +30,8 @@ class PeerDb {
     get(info_hash) {
         if (info_hash in this.db) {
             const arr = []
-            for (entry of this.db[info_hash]) {
+            for (const name in this.db[info_hash]) {
+                const entry = this.db[info_hash][name];
                 const d = { ip: entry.ip, port: entry.port };
                 arr.push(d);
             }
@@ -46,7 +47,9 @@ class PeerDb {
             }
         } 
     }
-
+    reset(){
+        this.db = {};
+    }
 };
 
 /**
