@@ -9,13 +9,14 @@ class PeerDb {
     }
 
     add(info_hash, ip, port, completed) {
-        const entry = { ip, port, time: new Date() ,completed};
+        const entry = { ip, port, time: new Date(), completed };
         if (info_hash in this.db) {
         } else {
             this.db[info_hash] = {};
         }
         const name = strname(ip, port);
         this.db[info_hash][name] = entry;
+        return name;
     }
     remove(info_hash, ip, port) {
         const entry = { ip, port, time: new Date() };
@@ -38,22 +39,19 @@ class PeerDb {
             return [];
         }
     }
-
-    response(info_hash) {
-        const d = {};
-        d['complete'] = 0;
-        d['downloaded'] = 0;
-        d['incomplete'] = 0;
-        d['interval'] = 1;
-        d['min interval'] = 1;
-        d['peers'] = '';
-        d['peers6'] = ''
+    complete(info_hash, name) {
+        if (info_hash in this.db) {
+            if (name in this.db[info_hash]){
+                this.db[info_hash][name].completed = true
+            }
+        } 
     }
+
 };
 
 /**
  * Global instance of database
  */
-db = new PeerDb();
+const db = new PeerDb();
 
 module.exports = db;
