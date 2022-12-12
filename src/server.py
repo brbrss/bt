@@ -4,28 +4,10 @@ import concurrent.futures
 import threading
 import conn_pool
 
-def exec_conn(conn):
-    try:
-        print('connect at ',conn.getpeername())
-        print('from',conn.getsockname())
-        print('fileno: ', conn.fileno())
-        conn.settimeout(3)
-        while True:
-            data = None
-            data = conn.recv(1024)
-            print('received ',data)
-            if data == b'':
-                print('socket closing: ',conn.getpeername())
-                conn.shutdown(socket.SHUT_RDWR)
-                conn.close()
-                return
-    except Exception as err:
-        print("error: ", err)
-        return
 
 class Server(object):
     '''
-        Multithreaded socket server
+        Socket for listening
 
         How to use:
         create server in main thread,
@@ -47,7 +29,7 @@ class Server(object):
         self.conn_list = []
         self.lock = threading.Lock()
     
-    def start(self, pool):
+    def start(self, conn_cb):
         '''start server
 
             this function is blocking, should start in a separate thread'''
@@ -56,7 +38,7 @@ class Server(object):
                 conn,addr = self.soc.accept()
                 print('received conn: ',addr)
                 self.lock.acquire()
-                pool.register(conn)
+                conn_cb(conn)
 
                 self.lock.release()
         except Exception as err:

@@ -7,14 +7,15 @@ import time
 
 NCON = 4
 
+
 def fixbytes(n):
     L = [i % 256 for i in range(n)]
     return bytes(L)
 
 
-def exec_conn(server,cb):
+def exec_conn(server, cb):
     server.listen(1)
-    conn,addr = server.accept()
+    conn, addr = server.accept()
 
     while True:
         data = None
@@ -25,10 +26,11 @@ def exec_conn(server,cb):
         except Exception as err:
             return
         if data == b'':
-            print('socket closing: ',conn.getpeername())
+            print('socket closing: ', conn.getpeername())
             conn.shutdown(socket.SHUT_RDWR)
             conn.close()
             return
+
 
 class MockServer(object):
     def __init__(self):
@@ -37,15 +39,18 @@ class MockServer(object):
         self.data = [b'' for i in range(NCON)]
         for i in range(NCON):
             soc = socket.socket()
-            soc.bind(("127.0.0.1",0))
+            soc.bind(("127.0.0.1", 0))
             myport = soc.getsockname()[1]
             port_list.append(myport)
+            ii = i
             def cb(x):
-                self.data[i] += x
-            self.executor.submit(exec_conn,soc,cb)
+                self.data[ii] += x
+            self.executor.submit(exec_conn, soc, cb)
             self.port_list = port_list
+
     def stop(self):
         self.executor.shutdown()
+
 
 class MockHandler(conn_pool.ConnOperator):
     def __init__(self):
@@ -53,13 +58,14 @@ class MockHandler(conn_pool.ConnOperator):
         self.write_buf = b'abcde'
         self.readnum = 0
 
-    def parse(self,data):
+    def parse(self, data):
         self.onread(data)
         self.readnum += len(data)
-        if(self.readnum>20):
+        if (self.readnum > 20):
             self.key.fileobj.close()
-    def add_to_write(self):
-        self.oncheck()
+
+
+
 
 class ConnPoolTest(unittest.TestCase):
 
@@ -71,7 +77,8 @@ class ConnPoolTest(unittest.TestCase):
                 s.connect(('127.0.0.1', port))
                 s.settimeout(1)
                 pool.register(s)
-        g = lambda: pool.run()
+
+        def g(): return pool.run()
         exe = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         exe.submit(g)
         time.sleep(2)
@@ -82,15 +89,15 @@ class ConnPoolTest(unittest.TestCase):
         server = MockServer()
         pool = conn_pool.ConnPool(MockHandler)
         for port in server.port_list:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.connect(('127.0.0.1', port))
-                s.settimeout(5)
-                pool.register(s)
-        g = lambda: pool.run()
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect(('127.0.0.1', port))
+            s.settimeout(50)
+            pool.register(s)
+
+        def g(): return pool.run()
         exe = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         exe.submit(g)
         time.sleep(2)
         pool.close()
         exe.shutdown()
         self.assertEqual(server.data[2], b'abcde')
-           
