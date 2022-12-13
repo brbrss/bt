@@ -46,3 +46,7 @@ class WriterTest(unittest.TestCase):
         self.assertEqual(int.from_bytes(res[5:9], 'big'), 77)
         self.assertEqual(int.from_bytes(res[9:13], 'big'), 13)
         self.assertEqual(res[13:], data)
+
+
+if __name__ == '__main__':
+    unittest.main()

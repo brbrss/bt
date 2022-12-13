@@ -1,6 +1,5 @@
 import unittest
-from writer import Writer
-import random
+
 from reader import Reader
 
 
@@ -14,8 +13,10 @@ class MockReader(Reader):
 
     def on_choke(self):
         self.output.append(['choke'])
+
     def on_unchoke(self):
         self.output.append(['unchoke'])
+
     def on_bitfield(self, field):
         self.output.append(['bitfield', field])
 
@@ -66,8 +67,12 @@ class ReaderTest(unittest.TestCase):
         reader = MockReader()
         for i in range(len(data)):
             reader.read(data[i:i+1])
-            bf = [c=='1' for c in '01110001'+'10011000']
+            bf = [c == '1' for c in '01110001'+'10011000']
         self.assertEqual(reader.output[0][0], 'handshake')
         self.assertEqual(reader.output[1][0], 'unchoke')
-        self.assertEqual(reader.output[2], ['bitfield',bf])
-        self.assertEqual(reader.output[3], ['piece',77,13,block])
+        self.assertEqual(reader.output[2], ['bitfield', bf])
+        self.assertEqual(reader.output[3], ['piece', 77, 13, block])
+
+
+if __name__ == '__main__':
+    unittest.main()
