@@ -27,7 +27,7 @@ def _bitbytes(arr):
 
 class Writer(object):
     def handshake(self, info_hash, peerid):
-        return
+        return b'\x13' + b"BitTorrent protocol" + b'\x00'*8 + info_hash + peerid
 
     def keep_alive(self):
         return _sendint(0)
