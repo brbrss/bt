@@ -1,4 +1,4 @@
-import ben
+from . import ben
 import hashlib
 import urllib.request
 import urllib.parse
@@ -9,7 +9,7 @@ import random
 def rand_id():
     '''random 20 byte id'''
     s = b'-000000-'
-    s += b''.join([random.randint(b'0'[0], b'9'[0]) for i in range(20-len(s))])
+    s += bytes([random.randint(b'0'[0], b'9'[0]) for i in range(20-len(s))])
     return s
 
 
