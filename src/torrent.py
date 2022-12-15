@@ -1,4 +1,4 @@
-from . import ben
+import ben
 import hashlib
 import urllib.request
 import urllib.parse
@@ -13,6 +13,21 @@ def rand_id():
     return s
 
 
+def parse_peer(s):
+    if type(s) is not bytes:
+        s = bytes(s, 'latin1')
+    len_s = len(s)
+    if len_s % 6 != 0:
+        raise RuntimeError('length of peer str not multiple of 6')
+    res = []
+    for n in range(len_s//6):
+        k = n * 6
+        ip = tuple(s[k:k+4])
+        port = s[k+4]*256+s[k+5]
+        res.append((ip, port))
+    return res
+
+
 class Torrent(object):
     def _read_meta(self, fp):
         data = ben.parse_file(fp)
@@ -21,7 +36,7 @@ class Torrent(object):
         if len(self.info['pieces']) % 20 != 0:
             raise RuntimeError('length of pieces not multiple of 20')
         self.pieces_hash = [data['info']['pieces'][i*20:1*20+20]
-                            for i in range(len(self.info['pieces'] // 20))]
+                            for i in range(len(self.info['pieces']) // 20)]
         infostr = bytes(ben.encode(self.info), 'latin1')
         sha1 = hashlib.sha1()
         sha1.update(infostr)
