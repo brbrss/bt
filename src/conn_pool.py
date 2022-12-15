@@ -95,7 +95,7 @@ class ConnPool(object):
         self.flag_run = True
         #self.handlerClass = handlerClass
 
-    def _register(self, connOperator):
+    def _register(self, connOperator: ConnOperator):
         ''' 
         Add socket to selector list
 
