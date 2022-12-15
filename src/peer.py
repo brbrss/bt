@@ -54,7 +54,7 @@ class MyReader(Reader):
 
 class Peer(ConnOperator):
     def __init__(self, conn: socket.socket, torrent: Torrent, is_initiating):
-        super().__init__()
+        super().__init__(conn)
         # ref
         self.torrent = torrent
         self.conn = conn
