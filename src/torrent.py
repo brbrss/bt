@@ -3,6 +3,14 @@ import hashlib
 import urllib.request
 import urllib.parse
 import urllib.error
+import random
+
+
+def rand_id():
+    '''random 20 byte id'''
+    s = b'-000000-'
+    s += b''.join([random.randint(b'0'[0], b'9'[0]) for i in range(20-len(s))])
+    return s
 
 
 class Torrent(object):
@@ -29,6 +37,7 @@ class Torrent(object):
         self.info_hash = None
         self.pieces_hash = None
         self.length = None
+        self.peerid = rand_id()
         self._read_meta(fp)
         self.content_buffer = [{} for i in self.pieces_hash]
         self.content = [{} for i in self.pieces_hash]
@@ -83,11 +92,14 @@ class Torrent(object):
             sha1 = hashlib.sha1()
             sha1.update(s)
             hash = sha1.digest()
+            self.content_buffer[piece_index] = {}
             if hash == self.pieces_hash[piece_index]:
                 self.content[piece_index] = s
                 return True
             else:
-                self.content_buffer[piece_index] = {}
                 return False
         else:
             return gap
+
+    def has_piece(self, piece_index):
+        return piece_index in self.content
