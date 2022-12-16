@@ -4,6 +4,9 @@ import socket
 import time
 from torrent import Torrent
 from reader import Reader
+from ratecounter import RateCounter
+
+
 
 
 class MyReader(Reader):
@@ -67,6 +70,10 @@ class Peer(ConnOperator):
         self.local_choke = True
         self.local_interested = False
         self.last_active_time = time.time()
+        # stat
+        self.d_total = 0
+        self.u_total = 0
+        self.rate_counter = RateCounter(10) # use 10 second average
         # data
         self.remote_pieces = set()  # which pieces remote has
         self.remote_request = set()
@@ -86,6 +93,19 @@ class Peer(ConnOperator):
         # xxx what to write?
         pass
 
+    ### for use from Torrent class ###  
+      
+    def d_rate(self):
+        return self.rate_counter.rate
+
+    def set_choke(self,x):
+        self.want_choke = x
+    
+    def set_interest(self,x):
+        self.want_interest = x
+
+    ### callbacks ###
+
     def on_handshake(self, info_hash, peerid):
         if (info_hash != self.info_hash):
             self.conn.shutdown(socket.SHUT_RDWR)
@@ -97,6 +117,7 @@ class Peer(ConnOperator):
 
     def on_choke(self):
         self.remote_choke = True
+        self.local_request.clear() # cancel my more requests
 
     def on_unchoke(self):
         self.remote_choke = False
@@ -130,8 +151,15 @@ class Peer(ConnOperator):
         self.remote_request.add((index, begin, length))
 
     def on_piece(self, index, begin, data):
-        # pass to Torrent obj
-        self.torrent.add_data(index, begin, data)
+        length = len(data)
+        k = (index, begin, length)
+        if not k in self.local_request:
+            return
+        else:
+            # pass to Torrent obj
+            self.torrent.add_data(index, begin, data)
+            self.local_request.remove(k)
+            self.rate_counter.add(length)
 
     def on_cancel(self, index, begin, length):
         self.remote_request.remove((index, begin, length))

@@ -5,6 +5,8 @@ import urllib.parse
 import urllib.error
 import random
 
+BLOCK_SIZE = 16384
+
 
 def rand_id():
     '''random 20 byte id'''
@@ -33,6 +35,7 @@ class Torrent(object):
         data = ben.parse_file(fp)
         self.announce = data['announce']
         self.info = data['info']
+        self.piece_length = data['info']['piece length']
         if len(self.info['pieces']) % 20 != 0:
             raise RuntimeError('length of pieces not multiple of 20')
         self.pieces_hash = [data['info']['pieces'][i*20:1*20+20]
@@ -86,7 +89,8 @@ class Torrent(object):
         self.peer_map[(ip, port)] = None
 
     def add_data(self, piece_index, begin, data):
-        self.content_buffer[piece_index][begin] = data
+        if len(data) == BLOCK_SIZE:
+            self.content_buffer[piece_index][begin] = data
 
     def varify_piece(self, piece_index):
         d = self.content_buffer[piece_index]
@@ -118,3 +122,58 @@ class Torrent(object):
 
     def has_piece(self, piece_index):
         return piece_index in self.content
+
+    def get_data(self, piece_index, begin, length):
+        return self.conent[piece_index][begin:begin+length]
+
+    def decide_interest(self):
+        for k in self.peer_map:
+            peer = self.peer_map[k]
+            possible_pieces = [
+                i for i in peer.remote_pieces if not self.has_piece(i)]
+            res = len(possible_pieces) > 0
+            peer.set_interest(res)
+        return
+
+    def decide_choke(self):
+        '''choking and interest on peers'''
+        def f(k): return self.peer_map[k].d_rate()
+        rate_ranking = sorted(self.peer_map.keys(), f, reverse=True)
+        for k in self.peer_map:
+            p = self.peer_map[k]
+            p.d_rate()
+        i = 0
+        num_peers = len(rate_ranking)
+        while i < num_peers:
+            k = rate_ranking[i]
+            if i < 4:
+                self.peer_map[k].set_choke(True)
+            else:
+                self.peer_map[k].set_choke(False)
+        if num_peers > 4:
+            optim = random.randint(4, num_peers-1)
+            k = rate_ranking[optim]
+            self.peer_map[k].set_choke(True)
+        return
+
+    def decide_request(self, peer):
+        '''which peer to request'''
+        total = set()
+        for k in self.peer_map:
+            total = total.union(self.peer_map[k].local_request)
+        pending = [i for i in self.content_buffer if self.content_buffer[i]]
+        num_block = self.piece_length / BLOCK_SIZE
+        priority_pieces = peer.remote_pieces.intersection(set(pending))
+        for i in priority_pieces:
+            for k in range(num_block):
+                b1 = k in self.content_buffer[i]
+                b2 = (i, k, BLOCK_SIZE) in total
+                if not b1 and not b2:
+                    return (i, k, BLOCK_SIZE)
+        # no available pending piece
+        possible_pieces = [
+            i for i in peer.remote_pieces if not self.has_piece(i)]
+        if not possible_pieces:
+            return None
+        i = random.choice(possible_pieces)
+        return (i, 0, BLOCK_SIZE)
