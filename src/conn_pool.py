@@ -6,7 +6,6 @@ import queue
 from conn_operator import ConnOperator
 
 
-
 def mask(user):
     '''Generates event mask for selector'''
     flag = 0
@@ -40,9 +39,10 @@ class ConnPool(object):
         name = connOperator.conn.fileno()
         #user = self.handlerClass()
         evmask = mask(connOperator)
-        soc_key = self.sel.register(connOperator.conn, evmask)
-        connOperator.key = soc_key
         self.conn_list[name] = connOperator
+        if evmask:
+            soc_key = self.sel.register(connOperator.conn, evmask)
+            connOperator.key = soc_key
 
     def register(self, connOperator):
         '''Takes in a ConnOperator, which should contain a connection.
@@ -52,22 +52,27 @@ class ConnPool(object):
         self.queue.put(connOperator)
         return
 
-    def refresh_status(self):
-        '''Refreshes read/write event mask for selector'''
+    def purge_socket(self):
+        '''Remove closed sockets'''
         for k in self.conn_list:
             conn = self.conn_list[k].key.fileobj
-            if conn.fileno() == -1: # only if socket is closed
+            if conn.fileno() == -1:  # only if socket is closed
                 self.sel.unregister(conn)
         self.conn_list = {
             k: self.conn_list[k] for k in self.conn_list if self.conn_list[k].key.fileobj.fileno() != -1}
 
+    def refresh_status(self):
+        '''Refreshes read/write event mask for selector'''
         for k in self.conn_list:
             user = self.conn_list[k]
             newmask = mask(user)
             if newmask != user.key.events:
-                newkey = self.sel.modify(
-                    user.key.fileobj, newmask, user.key.data)
-                user.key = newkey
+                if user.key.fd in self.sel.get_map():
+                    self.sel.unregister(user.conn)
+                    user.key = None
+                if newmask != 0:
+                    newkey = self.sel.register(user.conn, newmask, user.key.data)
+                    user.key = newkey
         return
 
     def refresh_timeout(self):
@@ -101,11 +106,12 @@ class ConnPool(object):
                     self.conn_list[key.fd].write(conn)
                 except:
                     conn.close()
-        self.refresh_status()
+        self.purge_socket()
         newtime = time.time()
         for key in self.conn_list:
             user = self.conn_list[key]
             user.check(newtime)
+        self.refresh_status()
         self.refresh_timeout()
 
     def run(self):
@@ -113,7 +119,8 @@ class ConnPool(object):
         try:
             while self.flag_run:
                 self.push_pending()
-                if len(self.conn_list) == 0:
+                m = self.sel.get_map()
+                if len(m) == 0:
                     time.sleep(1)
                 else:
                     self.onestep()
@@ -126,6 +133,7 @@ class ConnPool(object):
             conn = self.conn_list[k].key.fileobj
             fileno = conn.fileno()
             print('stop ', fileno)
+            self.sel.unregister(conn)
             if fileno != -1:
                 conn.shutdown(socket.SHUT_RDWR)
                 conn.close()
