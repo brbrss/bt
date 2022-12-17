@@ -35,11 +35,8 @@ class ConnOperator(object):
                 self.key.fileobj.shutdown(socket.SHUT_RDWR)
                 self.key.fileobj.close()
             return
-        if new_pos == len(self.write_buf):
-            self.write_buf = b''
-            self.write_pos = 0
-        else:
-            self.write_pos = new_pos
+        self.write_buf = self.write_buf[new_pos:]
+        self.write_pos = 0
         return
 
     def add_to_write(self):

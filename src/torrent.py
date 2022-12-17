@@ -1,3 +1,4 @@
+import time
 import ben
 import hashlib
 import urllib.request
@@ -41,7 +42,7 @@ class Torrent(object):
 
     def __init__(self, fp):
         # meta data
-        self.announce = None
+        self.announce: str = None
         self.info = None
         self.info_hash = None
         self.pieces_hash = None
@@ -53,7 +54,9 @@ class Torrent(object):
         self.content = [{} for i in self.pieces_hash]
         # remote data
         self.peer_map = {}
-        self.tracker_map = {}
+        self.tracker_map: dict[str, tracker.Tracker] = {}
+        self.tracker_map[self.announce] = tracker.Tracker(
+            {'err': 'not initialized'})
         self.lock_tracker = threading.Lock()
         # strategy data
         self.last_choke_time = 0  # last time changing choke
@@ -71,6 +74,8 @@ class Torrent(object):
         return data
 
     def tracker_get(self, url):
+        '''Send http request to tracker and store parsed response
+        in self.tracker_map'''
         data = urllib.parse.urlencode(self.req_query())
         req = urllib.request.Request(url+'?'+data, method='GET')
         res = None
@@ -84,7 +89,7 @@ class Torrent(object):
         except Exception as err:
             res = {'err': err.__repr__()}
         self.lock_tracker.acquire()
-        self.tracker_map[url] = tracker.Tracker(res) # should not throw
+        self.tracker_map[url] = tracker.Tracker(res)  # should not throw
         self.lock_tracker.release()
 
     def add_peer(self, ip, port, peer):
@@ -96,11 +101,14 @@ class Torrent(object):
             self.content_buffer[piece_index][begin] = data
 
     def varify_piece(self, piece_index):
+        '''returns True if good, False if hash does not match, list if not enough data'''
         d = self.content_buffer[piece_index]
         gap = []
         next_pos = 0
         s = b''
-        for k in d.keys():
+        key_list = list(d.keys())
+        key_list.sort()
+        for k in key_list:
             kk = k
             if k > next_pos:
                 gap.append(next_pos, k-next_pos)
@@ -130,6 +138,7 @@ class Torrent(object):
         return self.conent[piece_index][begin:begin+length]
 
     def decide_interest(self):
+        self.last_interest_time = time.time()
         for k in self.peer_map:
             peer = self.peer_map[k]
             possible_pieces = [
@@ -140,6 +149,7 @@ class Torrent(object):
 
     def decide_choke(self):
         '''choking on peers'''
+        self.last_choke_time = time.time()
         def f(k): return self.peer_map[k].d_rate()
         rate_ranking = sorted(self.peer_map.keys(), key=f, reverse=True)
         for k in self.peer_map:
@@ -172,16 +182,17 @@ class Torrent(object):
             num_block = self._num_block(i)
             for k in range(num_block):
                 b1 = k in self.content_buffer[i]
-                b2 = (i, k, BLOCK_SIZE) in total
+                block_len = self._block_length(i, k)
+                b2 = (i, k, block_len) in total
                 if not b1 and not b2:
-                    return (i, k, BLOCK_SIZE)
+                    return (i, k, block_len)
         # no available pending piece
         possible_pieces = [
             i for i in peer.remote_pieces if not self.has_piece(i)]
         if not possible_pieces:
             return None
         i = random.choice(possible_pieces)
-        return (i, 0, BLOCK_SIZE)
+        return (i, 0, self._block_length(i, 0))
 
     def _block_length(self, piece_id, block_id):
         x = self._piece_length(piece_id)

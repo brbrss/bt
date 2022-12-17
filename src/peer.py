@@ -7,8 +7,6 @@ from reader import Reader
 from ratecounter import RateCounter
 
 
-
-
 class MyReader(Reader):
     def __init__(self, peer):
         super().__init__()
@@ -73,9 +71,9 @@ class Peer(ConnOperator):
         # stat
         self.d_total = 0
         self.u_total = 0
-        self.rate_counter = RateCounter(10) # use 10 second average
+        self.rate_counter = RateCounter(10)  # use 10 second average
         # data
-        self.remote_pieces = set()  # which pieces remote has
+        self.remote_pieces: set[int] = set()  # which pieces remote has
         self.remote_request = set()
         self.local_request = set()
         # tools
@@ -93,17 +91,34 @@ class Peer(ConnOperator):
         # xxx what to write?
         pass
 
-    ### for use from Torrent class ###  
-      
+    ### for use from Torrent class ###
+
     def d_rate(self):
         return self.rate_counter.rate
 
-    def set_choke(self,x):
-        self.want_choke = x
-    
-    def set_interest(self,x):
-        self.want_interest = x
+    # no safety issue for commands
+    # should only be called after select
 
+    def set_choke(self, x):
+        self.want_choke = x
+        if x:
+            msg = self.writer.choke()
+        else:
+            msg = self.writer.unchock()
+        self.write_buf += msg
+
+    def set_interest(self, x):
+        self.want_interest = x
+        if x:
+            msg = self.writer.interested()
+        else:
+            msg = self.writer.uninterested()
+        self.write_buf += msg
+
+    def add_request(self, req_data):
+        self.local_request.add(req_data)
+        msg = self.writer.request(req_data[0], req_data[1], req_data[2])
+        self.write_buf += msg
     ### callbacks ###
 
     def on_handshake(self, info_hash, peerid):
@@ -117,7 +132,7 @@ class Peer(ConnOperator):
 
     def on_choke(self):
         self.remote_choke = True
-        self.local_request.clear() # cancel my more requests
+        self.local_request.clear()  # cancel my more requests
 
     def on_unchoke(self):
         self.remote_choke = False

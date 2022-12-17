@@ -128,6 +128,7 @@ class ConnPool(object):
             print('pool error ', err)
 
     def close(self):
+        '''Closes any registered socket and end loop in self.run()'''
         self.flag_run = False
         for k in self.conn_list:
             conn = self.conn_list[k].key.fileobj

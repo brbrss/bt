@@ -1,13 +1,13 @@
 import time
 
 
-def parse_peer(s):
+def parse_peer(s: bytes):
     if type(s) is not bytes:
         s = bytes(s, 'latin1')
     len_s = len(s)
     if len_s % 6 != 0:
         raise RuntimeError('length of peer str not multiple of 6')
-    res = []
+    res: list[tuple[tuple[int, int, int, int], int]] = []
     for n in range(len_s//6):
         k = n * 6
         ip = tuple(s[k:k+4])
@@ -17,6 +17,10 @@ def parse_peer(s):
 
 
 class Tracker(object):
+    '''Data for tracker
+
+    Should be replace, not modified, for each tracker get'''
+
     def __init__(self, d):
         '''d parsed dict from tracker response'''
         self.d = d
@@ -41,7 +45,7 @@ class Tracker(object):
         self.downloaded = d['downloaded']
         self.peers = parse_peer(d['peers'])
 
-    def has_err(self, d, err:Exception):
+    def has_err(self, d, err: Exception):
         if 'err' in d:
             self.err = d['err']
         elif 'failure reason' in d:
