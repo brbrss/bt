@@ -6,6 +6,7 @@ import urllib.error
 import random
 import math
 import tracker
+import threading
 
 
 BLOCK_SIZE = 16384
@@ -18,11 +19,9 @@ def rand_id():
     return s
 
 
-
-
-
 class Torrent(object):
     def _read_meta(self, fp):
+        '''read data from torrent file'''
         data = ben.parse_file(fp)
         self.announce = data['announce']
         self.info = data['info']
@@ -41,6 +40,7 @@ class Torrent(object):
             self.length = sum([fl['length'] for fl in self.info['files']])
 
     def __init__(self, fp):
+        # meta data
         self.announce = None
         self.info = None
         self.info_hash = None
@@ -48,10 +48,16 @@ class Torrent(object):
         self.length = None
         self.peerid = rand_id()
         self._read_meta(fp)
+        # data
         self.content_buffer = [{} for i in self.pieces_hash]
         self.content = [{} for i in self.pieces_hash]
+        # remote data
         self.peer_map = {}
         self.tracker_map = {}
+        self.lock_tracker = threading.Lock()
+        # strategy data
+        self.last_choke_time = 0  # last time changing choke
+        self.last_interest_time = 0  # last time changing interest
 
     def req_query(self):
         data = {
@@ -72,13 +78,18 @@ class Torrent(object):
             res = urllib.request.urlopen(req)
             s = res.read()
             s = str(s, 'latin1')
-            self.tracker_map[url] = tracker.Tracker(ben.parse(s))
+            res = ben.parse(s)
         except urllib.error.HTTPError as err:
-            self.tracker_map[url] = tracker.Tracker({'err': err.read()})
+            res = {'err': err.read()}
+        except Exception as err:
+            res = {'err': err.__repr__()}
+        self.lock_tracker.acquire()
+        self.tracker_map[url] = tracker.Tracker(res) # should not throw
+        self.lock_tracker.release()
 
-    def add_peer(self, ip, port):
+    def add_peer(self, ip, port, peer):
         ''' xxx '''
-        self.peer_map[(ip, port)] = None
+        self.peer_map[(ip, port)] = peer
 
     def add_data(self, piece_index, begin, data):
         if len(data) == BLOCK_SIZE:
