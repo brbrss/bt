@@ -4,6 +4,7 @@ import urllib.request
 import urllib.parse
 import urllib.error
 import random
+import math
 
 BLOCK_SIZE = 16384
 
@@ -35,7 +36,7 @@ class Torrent(object):
         data = ben.parse_file(fp)
         self.announce = data['announce']
         self.info = data['info']
-        self.piece_length = data['info']['piece length']
+        self._default_piece_length = data['info']['piece length']
         if len(self.info['pieces']) % 20 != 0:
             raise RuntimeError('length of pieces not multiple of 20')
         self.pieces_hash = [data['info']['pieces'][i*20:1*20+20]
@@ -86,6 +87,7 @@ class Torrent(object):
             self.tracker_map[url] = {'err': err.read()}
 
     def add_peer(self, ip, port):
+        ''' xxx '''
         self.peer_map[(ip, port)] = None
 
     def add_data(self, piece_index, begin, data):
@@ -138,7 +140,7 @@ class Torrent(object):
     def decide_choke(self):
         '''choking and interest on peers'''
         def f(k): return self.peer_map[k].d_rate()
-        rate_ranking = sorted(self.peer_map.keys(), f, reverse=True)
+        rate_ranking = sorted(self.peer_map.keys(), key=f, reverse=True)
         for k in self.peer_map:
             p = self.peer_map[k]
             p.d_rate()
@@ -147,13 +149,14 @@ class Torrent(object):
         while i < num_peers:
             k = rate_ranking[i]
             if i < 4:
-                self.peer_map[k].set_choke(True)
-            else:
                 self.peer_map[k].set_choke(False)
+            else:
+                self.peer_map[k].set_choke(True)
+            i += 1
         if num_peers > 4:
             optim = random.randint(4, num_peers-1)
             k = rate_ranking[optim]
-            self.peer_map[k].set_choke(True)
+            self.peer_map[k].set_choke(False)
         return
 
     def decide_request(self, peer):
@@ -161,10 +164,11 @@ class Torrent(object):
         total = set()
         for k in self.peer_map:
             total = total.union(self.peer_map[k].local_request)
-        pending = [i for i in self.content_buffer if self.content_buffer[i]]
-        num_block = self.piece_length / BLOCK_SIZE
+        pending = [i for i in range(
+            len(self.content_buffer)) if self.content_buffer[i]]
         priority_pieces = peer.remote_pieces.intersection(set(pending))
         for i in priority_pieces:
+            num_block = self._num_block(i)
             for k in range(num_block):
                 b1 = k in self.content_buffer[i]
                 b2 = (i, k, BLOCK_SIZE) in total
@@ -177,3 +181,15 @@ class Torrent(object):
             return None
         i = random.choice(possible_pieces)
         return (i, 0, BLOCK_SIZE)
+
+    def _block_length(self, piece_id, block_id):
+        x = self._piece_length(piece_id)
+        t = x - block_id * BLOCK_SIZE
+        return min(t, BLOCK_SIZE)
+
+    def _num_block(self, piece_id):
+        return math.ceil(self._piece_length(piece_id) / BLOCK_SIZE)
+
+    def _piece_length(self, piece_id):
+        tail = self.length - piece_id * self._default_piece_length
+        return min(tail, self._default_piece_length)
