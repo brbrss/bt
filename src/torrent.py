@@ -5,6 +5,8 @@ import urllib.parse
 import urllib.error
 import random
 import math
+import tracker
+
 
 BLOCK_SIZE = 16384
 
@@ -16,19 +18,7 @@ def rand_id():
     return s
 
 
-def parse_peer(s):
-    if type(s) is not bytes:
-        s = bytes(s, 'latin1')
-    len_s = len(s)
-    if len_s % 6 != 0:
-        raise RuntimeError('length of peer str not multiple of 6')
-    res = []
-    for n in range(len_s//6):
-        k = n * 6
-        ip = tuple(s[k:k+4])
-        port = s[k+4]*256+s[k+5]
-        res.append((ip, port))
-    return res
+
 
 
 class Torrent(object):
@@ -63,10 +53,10 @@ class Torrent(object):
         self.peer_map = {}
         self.tracker_map = {}
 
-    def req_data(self):
+    def req_query(self):
         data = {
             'info_hash': self.info_hash,
-            'peer_id': 'ab123456781234567890',
+            'peer_id': self.peerid,
             'port': 6881,
             'uploaded': '0',
             'downloaded': '0',
@@ -75,16 +65,16 @@ class Torrent(object):
         return data
 
     def tracker_get(self, url):
-        data = urllib.parse.urlencode(self.req_data())
+        data = urllib.parse.urlencode(self.req_query())
         req = urllib.request.Request(url+'?'+data, method='GET')
         res = None
         try:
             res = urllib.request.urlopen(req)
             s = res.read()
             s = str(s, 'latin1')
-            self.tracker_map[url] = ben.parse(s)
+            self.tracker_map[url] = tracker.Tracker(ben.parse(s))
         except urllib.error.HTTPError as err:
-            self.tracker_map[url] = {'err': err.read()}
+            self.tracker_map[url] = tracker.Tracker({'err': err.read()})
 
     def add_peer(self, ip, port):
         ''' xxx '''
@@ -138,7 +128,7 @@ class Torrent(object):
         return
 
     def decide_choke(self):
-        '''choking and interest on peers'''
+        '''choking on peers'''
         def f(k): return self.peer_map[k].d_rate()
         rate_ranking = sorted(self.peer_map.keys(), key=f, reverse=True)
         for k in self.peer_map:
@@ -160,7 +150,7 @@ class Torrent(object):
         return
 
     def decide_request(self, peer):
-        '''which peer to request'''
+        '''what to request from peer'''
         total = set()
         for k in self.peer_map:
             total = total.union(self.peer_map[k].local_request)

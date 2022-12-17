@@ -1,6 +1,6 @@
 
 import unittest
-from torrent import Torrent, parse_peer
+from torrent import Torrent
 
 
 LEVITTOWN = './resource/levittown.torrent'
@@ -31,11 +31,6 @@ class TorrentTest(unittest.TestCase):
         t = Torrent(fp)
         self.assertEqual(t.announce, 'http://127.0.0.1:6969/announce')
         self.assertEqual(t._default_piece_length, 262144)
-
-    def test_parse(self):
-        s = '\x87\x00\x92¹\x1aá'
-        res = parse_peer(s)
-        self.assertEqual(res,  [((135, 0, 146, 185), 6881)])
 
     def test_interested(self):
         fp = './resource/gatsby.torrent'
