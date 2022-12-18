@@ -2,3 +2,4 @@
 try.py
 .vscode/*
 tracker/node_modules/*
+resource/test/*

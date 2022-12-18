@@ -11,8 +11,8 @@ def set_file(fp, s):
 class ChainFileTest(unittest.TestCase):
 
     def test_read(self):
-        a = './resource/multi/1.part'
-        b = './resource/multi/2.part'
+        a = './resource/test/1.part'
+        b = './resource/test/2.part'
         s1 = bytes([i for i in range(33)])
         s2 = b'abcdefg'
         set_file(a, s1)
@@ -26,7 +26,7 @@ class ChainFileTest(unittest.TestCase):
 
 
     def test_write(self):
-        root = './resource/multi/m/'
+        root = './resource/test/m/'
         fl = []
         for i in range(6):
             fp = root+str(i)
