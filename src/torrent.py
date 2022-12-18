@@ -8,6 +8,7 @@ import random
 import math
 import tracker
 import threading
+from file_manager import FileManager
 
 
 BLOCK_SIZE = 16384
@@ -40,7 +41,8 @@ class Torrent(object):
         elif 'files' in self.info:
             self.length = sum([fl['length'] for fl in self.info['files']])
 
-    def __init__(self, fp):
+    def __init__(self, fp, folder):
+        self.savefolder = folder
         # meta data
         self.announce: str = None
         self.info = None
@@ -50,8 +52,8 @@ class Torrent(object):
         self.peerid = rand_id()
         self._read_meta(fp)
         # data
-        self.content_buffer = [{} for i in self.pieces_hash]
-        self.content = [{} for i in self.pieces_hash]
+        #self.content_buffer = [{} for i in self.pieces_hash]
+        #self.content = [{} for i in self.pieces_hash]
         # remote data
         self.peer_map = {}
         self.tracker_map: dict[str, tracker.Tracker] = {}
@@ -61,7 +63,16 @@ class Torrent(object):
         # strategy data
         self.last_choke_time = 0  # last time changing choke
         self.last_interest_time = 0  # last time changing interest
+        self.fm = None
 
+    def start(self):
+        # tool
+        self.fm = FileManager(self.info, self.savefolder)
+        self.tracker_get(self.announce)
+
+    def close(self):
+        self.fm.close()
+        
     def req_query(self):
         data = {
             'info_hash': self.info_hash,
@@ -97,45 +108,13 @@ class Torrent(object):
         self.peer_map[(ip, port)] = peer
 
     def add_data(self, piece_index, begin, data):
-        if len(data) == BLOCK_SIZE:
-            self.content_buffer[piece_index][begin] = data
-
-    def varify_piece(self, piece_index):
-        '''returns True if good, False if hash does not match, list if not enough data'''
-        d = self.content_buffer[piece_index]
-        gap = []
-        next_pos = 0
-        s = b''
-        key_list = list(d.keys())
-        key_list.sort()
-        for k in key_list:
-            kk = k
-            if k > next_pos:
-                gap.append(next_pos, k-next_pos)
-            elif k < next_pos:
-                kk = next_pos
-                s += d[k][kk-k:]
-            else:  # equal
-                s += d[k][kk-k:]
-            next_pos = k + len(d[k])
-        if gap == []:
-            sha1 = hashlib.sha1()
-            sha1.update(s)
-            hash = sha1.digest()
-            self.content_buffer[piece_index] = {}
-            if hash == self.pieces_hash[piece_index]:
-                self.content[piece_index] = s
-                return True
-            else:
-                return False
-        else:
-            return gap
+        return self.fm.add_block(piece_index, begin, data)
 
     def has_piece(self, piece_index):
-        return piece_index in self.content
+        return self.fm.has_piece(piece_index)
 
     def get_data(self, piece_index, begin, length):
-        return self.conent[piece_index][begin:begin+length]
+        return self.fm.get_block(piece_index, begin, length)
 
     def decide_interest(self):
         self.last_interest_time = time.time()

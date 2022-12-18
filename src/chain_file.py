@@ -4,8 +4,8 @@ import os.path
 class ChainFile(object):
     def __init__(self, ls: list):
         mode = 'r+b'
-        self.file_list = []
-        self.n_list = []
+        self.file_list: list = []
+        self.n_list: list[int] = []
         for fp in ls:
             self.n_list.append(os.path.getsize(fp))
             f = open(fp, mode)
@@ -37,7 +37,7 @@ class ChainFile(object):
             res += self.file_list[i].read(length-len(res))
         return res
 
-    def write(self, offset, data):
+    def write(self, offset, data: bytes):
         i, offset = self.seek(offset)
         n = len(data)
         src_pos = 0
@@ -55,6 +55,9 @@ class ChainFile(object):
             self.file_list[i].write(data[src_pos:src_pos+length])
             src_pos += length
             n -= length
+
+    def length(self):
+        return sum(self.n_list)
 
     def close(self):
         for f in self.file_list:

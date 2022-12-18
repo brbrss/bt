@@ -28,13 +28,13 @@ class TorrentTest(unittest.TestCase):
 
     def test_init(self):
         fp = './resource/gatsby.torrent'
-        t = Torrent(fp)
+        t = Torrent(fp, '')
         self.assertEqual(t.announce, 'http://127.0.0.1:6969/announce')
         self.assertEqual(t._default_piece_length, 262144)
 
     def test_interested(self):
         fp = './resource/gatsby.torrent'
-        t = Torrent(fp)
+        t = Torrent(fp, '')
         p1 = MockPeer()
         p2 = MockPeer()
         p1.remote_pieces.add(2)
@@ -46,7 +46,7 @@ class TorrentTest(unittest.TestCase):
 
     def test_choke(self):
         fp = './resource/gatsby.torrent'
-        t = Torrent(fp)
+        t = Torrent(fp, '')
         plist = []
         for i in range(30):
             p = MockPeer()
@@ -61,13 +61,13 @@ class TorrentTest(unittest.TestCase):
 
     def test_choke_0(self):
         fp = './resource/gatsby.torrent'
-        t = Torrent(fp)
+        t = Torrent(fp, '')
 
         t.decide_choke()
 
     def test_choke_1(self):
         fp = './resource/gatsby.torrent'
-        t = Torrent(fp)
+        t = Torrent(fp, '')
         plist = []
         for i in range(1):
             p = MockPeer()
@@ -78,7 +78,7 @@ class TorrentTest(unittest.TestCase):
         self.assertEqual(plist[0].choke, False)
 
     def test_request_1(self):
-        t = Torrent(LEVITTOWN)
+        t = Torrent(LEVITTOWN, '')
         plist = []
         for i in range(10):
             p = MockPeer()
@@ -90,7 +90,7 @@ class TorrentTest(unittest.TestCase):
         self.assertEqual(res, (41, 0, 16384))
 
     def test_request_queue(self):
-        t = Torrent(LEVITTOWN)
+        t = Torrent(LEVITTOWN, '')
         t.content_buffer[41][0] = b'0'*16384
         t.content_buffer[41][1] = b'0'*16384
         t.content_buffer[41][2] = b'0'*16384
