@@ -9,6 +9,7 @@ import math
 import tracker
 import threading
 from file_manager import FileManager
+from server import Server
 
 
 BLOCK_SIZE = 16384
@@ -65,14 +66,18 @@ class Torrent(object):
         self.last_interest_time = 0  # last time changing interest
         self.fm = None
 
-    def start(self):
+    def start(self, server_cb):
+        '''server_cb callback for registering server socket'''
         # tool
         self.fm = FileManager(self.info, self.savefolder)
         self.tracker_get(self.announce)
+        self.server = Server(0)  # let os select port
+        def f(): return self.server.start(server_cb)
+        self.thread = threading.Thread(f)
 
     def close(self):
         self.fm.close()
-        
+
     def req_query(self):
         data = {
             'info_hash': self.info_hash,

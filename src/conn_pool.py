@@ -21,13 +21,14 @@ class ConnPool(object):
     Takes in sockets and handles using/closing sockets. 
     Outside code should not touch these sockets after registering.'''
 
-    def __init__(self):
+    def __init__(self, refresh_cb):
         self.sel = selectors.DefaultSelector()
         self.conn_list = {}
         self.timeout = 1
         self.queue = queue.Queue()
         self.flag_run = True
         #self.handlerClass = handlerClass
+        self.refresh_cb = refresh_cb
 
     def _register(self, connOperator: ConnOperator):
         ''' 
@@ -71,7 +72,7 @@ class ConnPool(object):
                     self.sel.unregister(user.conn)
                     user.key = None
                 if newmask != 0:
-                    newkey = self.sel.register(user.conn, newmask, user.key.data)
+                    newkey = self.sel.modify(user.conn, newmask, user.key.data)
                     user.key = newkey
         return
 
@@ -106,6 +107,8 @@ class ConnPool(object):
                     self.conn_list[key.fd].write(conn)
                 except:
                     conn.close()
+
+    def check(self):
         self.purge_socket()
         newtime = time.time()
         for key in self.conn_list:
@@ -113,6 +116,7 @@ class ConnPool(object):
             user.check(newtime)
         self.refresh_status()
         self.refresh_timeout()
+        self.refresh_cb()
 
     def run(self):
         '''Call this method to start processing sockets'''
@@ -124,6 +128,7 @@ class ConnPool(object):
                     time.sleep(1)
                 else:
                     self.onestep()
+                self.check()
         except Exception as err:
             print('pool error ', err)
 

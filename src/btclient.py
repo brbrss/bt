@@ -2,7 +2,6 @@ from conn_pool import ConnPool
 from peer import Peer
 from torrent import Torrent
 import threading
-from server import Server
 import concurrent.futures
 import time
 import socket
@@ -12,19 +11,18 @@ class BtClient(object):
     '''One listening thread for each torrent, plus one socket pool thread'''
 
     def __init__(self):
-        self.conn_pool = ConnPool()
-        self.torrentList = {}
+        def cb(): return self.refresh_cb()
+        self.conn_pool = ConnPool(cb)
+        self.torrent_list = {}
         #self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
         self.worker_thread = None
         return
 
-    def torrent(self, fp):
-        t = Torrent(fp)
-        self.torrentList[t.info_hash] = t
-        server = Server(0)  # let os select port
-        def cb(s): return self.add_conn(s, t, False)
-        def f(): return server.start(cb)
-        t.thread = threading.Thread(f)
+    def create_torrent(self, fp, folder):
+        t = Torrent(fp, folder)
+        self.torrent_list[t.info_hash] = t
+        def cb(s): return self.add_conn(s, self, False)
+        t.start(cb)
         return
 
     def start(self):
@@ -32,12 +30,20 @@ class BtClient(object):
         self.worker_thread = threading.Thread(f)
 
     def stop(self):
+        for t in self.torrent_list:
+            t.server.close()
+
         self.conn_pool.close()
 
     def check(self):
         for t in self.torrentList:
             t.refresh()
         pass
+ 
+    def refresh_cb(self):
+        for t in self.torrent_list:
+            self.refresh_torrent(t)
+        return
 
     def refresh_torrent(self, t: Torrent):
         fresh_tracker = self.refresh_tracker(t)
@@ -63,6 +69,7 @@ class BtClient(object):
         conn.connect(address)
         p = Peer(conn, t, True)
         t.add_peer(ip, port, p)
+
 
     def refresh_peer(self, t: Torrent):
         for tracker_url in t.tracker_map:
