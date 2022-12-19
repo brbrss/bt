@@ -59,7 +59,7 @@ class FileManager(object):
         self.buffer: list[dict[int, bytes]] = [{} for i in self.pieces_hash]
         # init
         fl, nl = self.read_info(torrent_info, folder)
-        for i in range(fl):
+        for i in range(len(fl)):
             prepare_file(fl[i], nl[i])
         # tool
         self.cf = ChainFile(fl)
@@ -89,7 +89,7 @@ class FileManager(object):
 
     def has_piece(self,i):
         return i in self.complete_pieces
-        
+
     def add_block(self, piece_index, begin, data):
         self.buffer[piece_index][begin] = data
         self.varify_piece(piece_index)
