@@ -11,3 +11,9 @@ class FileManagerTest(unittest.TestCase):
         folder = './resource'
         d = ben.parse_file(fp)
         FileManager(d['info'], folder)
+
+    # def test_create(self):
+    #     #fp = './resource/berlin.torrent'
+    #     folder = './resource/test/berlin'
+    #     d = ben.parse_file(fp)
+    #     FileManager(d['info'], folder)

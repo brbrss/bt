@@ -1,4 +1,5 @@
 import os.path
+import os
 import hashlib
 
 from chain_file import ChainFile
@@ -9,6 +10,8 @@ def resolve_path(folder, name, ls):
 
 
 def create_file(fp, length):
+    folder = os.path.dirname(fp)
+    os.makedirs(folder, exist_ok=True)
     f = open(fp, 'wb')
     while length:
         n = min(length, 1024)
@@ -53,7 +56,7 @@ class FileManager(object):
     def __init__(self, torrent_info: dict, folder):
         # data
         self.piece_length = torrent_info['piece length']
-        self.pieces_hash = [torrent_info['pieces'][i*20:1*20+20]
+        self.pieces_hash = [torrent_info['pieces'][i*20:i*20+20]
                             for i in range(len(torrent_info['pieces']) // 20)]
         self.complete_pieces: set[int] = set()
         self.buffer: list[dict[int, bytes]] = [{} for i in self.pieces_hash]
@@ -87,7 +90,7 @@ class FileManager(object):
     def close(self):
         self.cf.close()
 
-    def has_piece(self,i):
+    def has_piece(self, i):
         return i in self.complete_pieces
 
     def add_block(self, piece_index, begin, data):
