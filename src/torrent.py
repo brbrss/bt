@@ -73,7 +73,7 @@ class Torrent(object):
         self.tracker_get(self.announce)
         self.server = Server(0)  # let os select port
         def f(): return self.server.start(server_cb)
-        self.thread = threading.Thread(f)
+        self.thread = threading.Thread(target=f)
 
     def close(self):
         self.fm.close()
@@ -155,6 +155,12 @@ class Torrent(object):
         return
 
     def decide_request(self, peer):
+        res = self._decide_request(peer)
+        if res:
+            peer.add_request(res)
+        return
+
+    def _decide_request(self, peer):
         '''what to request from peer'''
         total = set()
         for k in self.peer_map:

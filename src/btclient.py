@@ -27,7 +27,7 @@ class BtClient(object):
 
     def start(self):
         def f(): return self.conn_pool.run()
-        self.worker_thread = threading.Thread(f)
+        self.worker_thread = threading.Thread(target=f)
 
     def stop(self):
         for t in self.torrent_list:
@@ -39,7 +39,7 @@ class BtClient(object):
         for t in self.torrentList:
             t.refresh()
         pass
- 
+
     def refresh_cb(self):
         for t in self.torrent_list:
             self.refresh_torrent(t)
@@ -69,7 +69,6 @@ class BtClient(object):
         conn.connect(address)
         p = Peer(conn, t, True)
         t.add_peer(ip, port, p)
-
 
     def refresh_peer(self, t: Torrent):
         for tracker_url in t.tracker_map:

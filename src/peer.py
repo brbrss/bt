@@ -175,6 +175,7 @@ class Peer(ConnOperator):
             self.torrent.add_data(index, begin, data)
             self.local_request.remove(k)
             self.rate_counter.add(length)
+            self.torrent.decide_request(self)
 
     def on_cancel(self, index, begin, length):
         self.remote_request.remove((index, begin, length))
