@@ -26,9 +26,9 @@ def prepare_file(fp, length):
     if os.path.exists(fp):
         if os.path.getsize(fp) == length:
             return
-    elif os.path.exists(fp+'.part'):
-        if os.path.getsize(fp+'.part') == length:
-            return
+    # elif os.path.exists(fp+'.part'):
+    #     if os.path.getsize(fp+'.part') == length:
+    #         return
     else:
         create_file(fp, length)
 
