@@ -26,7 +26,10 @@ class ChainFile(object):
         return i, begin
 
     def read(self, offset, length):
-        i, offset = self.seek(offset)
+        try:
+            i, offset = self.seek(offset)
+        except RuntimeError:
+            return b''
         self.file_list[i].seek(offset)
         res = self.file_list[i].read(length)
         while len(res) < length:

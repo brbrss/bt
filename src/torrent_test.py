@@ -3,7 +3,9 @@ import unittest
 from torrent import Torrent
 
 
-LEVITTOWN = './resource/levittown.torrent'
+#LEVITTOWN = './resource/levittown.torrent'
+TMULTI = './resource/hasthree.torrent'
+
 def NOFUN(): return None
 
 
@@ -48,6 +50,7 @@ class TorrentTest(unittest.TestCase):
         t.decide_interest()
         self.assertEqual(p1.interested, True)
         self.assertEqual(p2.interested, False)
+        t.close()
 
     def test_choke(self):
         fp = './resource/gatsby.torrent'
@@ -83,7 +86,7 @@ class TorrentTest(unittest.TestCase):
         self.assertEqual(plist[0].choke, False)
 
     def test_request_1(self):
-        t = Torrent(LEVITTOWN, './resource/test/torrent_test')
+        t = Torrent(TMULTI, './resource/test/torrent_test')
         t.start(lambda: None)
         plist = []
         for i in range(10):
@@ -91,29 +94,29 @@ class TorrentTest(unittest.TestCase):
             p.d = 30.0-i
             plist.append(p)
             t.peer_map[((i, 2, 3, 4), 7890)] = p
-        plist[0].remote_pieces.add(41)
+        plist[0].remote_pieces.add(6)
         t.decide_request(plist[0])
-        self.assertEqual(plist[0].local_request.pop(), (41, 0, 16384))
+        self.assertEqual(plist[0].local_request.pop(), (6, 0, 16384))
         t.close()
 
     def test_request_queue(self):
-        t = Torrent(LEVITTOWN, './resource/test/torrent_test')
+        t = Torrent(TMULTI, './resource/test/torrent_test')
         t.start(NOFUN)
         # t.content_buffer[41][0] = b'0'*16384
         # t.content_buffer[41][1] = b'0'*16384
         # t.content_buffer[41][2] = b'0'*16384
         s = b'0'*16384
-        t.add_data(41, 0, s)
-        t.add_data(41, 1, s)
-        t.add_data(41, 2, s)
+        t.add_data(6, 0, s)
+        t.add_data(6, 1, s)
+        t.add_data(6, 2, s)
         plist = []
         for i in range(5):
             p = MockPeer()
-            p.remote_pieces.add(41)
-            p.local_request.add((41, i+3, 16384))
+            p.remote_pieces.add(6)
+            p.local_request.add((6, i+3, 16384))
             p.d = 30.0-i
             plist.append(p)
             t.peer_map[((i, 2, 3, 4), 7890)] = p
-        plist[0].remote_pieces.add(41)
+        plist[0].remote_pieces.add(6)
         res = t.decide_request(plist[0])
-        self.assertEqual(plist[0].local_request.pop(), (41, 8, 16384))
+        self.assertEqual(plist[0].local_request.pop(), (6, 8, 16384))
