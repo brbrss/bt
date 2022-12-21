@@ -32,10 +32,10 @@ class Writer(object):
     def keep_alive(self):
         return _sendint(0)
 
-    def chock(self):
+    def choke(self):
         return _sendint(1) + b'\x00'
 
-    def unchock(self):
+    def unchoke(self):
         return _sendint(1) + b'\x01'
 
     def interested(self):

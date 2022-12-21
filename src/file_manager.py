@@ -103,6 +103,10 @@ class FileManager(object):
         else:
             raise RuntimeError('requested block is unavailable')
 
+    def get_partial(self):
+        '''list of partial pieces'''
+        return [i for i in range(len(self.buffer)) if self.buffer[i]]
+
     def varify_piece(self, piece_index):
         '''returns True if good, False if hash does not match, list if not enough data
 
@@ -116,20 +120,21 @@ class FileManager(object):
         for k in key_list:
             kk = k
             if k > next_pos:
-                gap.append(next_pos, k-next_pos)
+                gap.append((next_pos, k-next_pos))
             elif k < next_pos:
                 kk = next_pos
                 s += d[k][kk-k:]
             else:  # equal
                 s += d[k][kk-k:]
             next_pos = k + len(d[k])
-        if gap == []:
+        if gap == [] and next_pos == self.piece_length:
             sha1 = hashlib.sha1()
             sha1.update(s)
             hash = sha1.digest()
             self.buffer[piece_index] = {}
             if hash == self.pieces_hash[piece_index]:
                 self.cf.write(piece_index*self.piece_length, s)
+                self.complete_pieces.add(piece_index)
                 return True
             else:
                 return False

@@ -4,6 +4,7 @@ from torrent import Torrent
 
 
 LEVITTOWN = './resource/levittown.torrent'
+def NOFUN(): return None
 
 
 class MockPeer(object):
@@ -23,6 +24,9 @@ class MockPeer(object):
     def d_rate(self):
         return self.d
 
+    def add_request(self, res):
+        self.local_request.add(res)
+
 
 class TorrentTest(unittest.TestCase):
 
@@ -34,7 +38,8 @@ class TorrentTest(unittest.TestCase):
 
     def test_interested(self):
         fp = './resource/gatsby.torrent'
-        t = Torrent(fp, '')
+        t = Torrent(fp, './resource')
+        t.start(lambda: None)
         p1 = MockPeer()
         p2 = MockPeer()
         p1.remote_pieces.add(2)
@@ -78,7 +83,8 @@ class TorrentTest(unittest.TestCase):
         self.assertEqual(plist[0].choke, False)
 
     def test_request_1(self):
-        t = Torrent(LEVITTOWN, '')
+        t = Torrent(LEVITTOWN, './resource/test/torrent_test')
+        t.start(lambda: None)
         plist = []
         for i in range(10):
             p = MockPeer()
@@ -86,15 +92,20 @@ class TorrentTest(unittest.TestCase):
             plist.append(p)
             t.peer_map[((i, 2, 3, 4), 7890)] = p
         plist[0].remote_pieces.add(41)
-        res = t.decide_request(plist[0])
-        self.assertEqual(res, (41, 0, 16384))
+        t.decide_request(plist[0])
+        self.assertEqual(plist[0].local_request.pop(), (41, 0, 16384))
+        t.close()
 
     def test_request_queue(self):
-        t = Torrent(LEVITTOWN, '')
-        t.content_buffer[41][0] = b'0'*16384
-        t.content_buffer[41][1] = b'0'*16384
-        t.content_buffer[41][2] = b'0'*16384
-
+        t = Torrent(LEVITTOWN, './resource/test/torrent_test')
+        t.start(NOFUN)
+        # t.content_buffer[41][0] = b'0'*16384
+        # t.content_buffer[41][1] = b'0'*16384
+        # t.content_buffer[41][2] = b'0'*16384
+        s = b'0'*16384
+        t.add_data(41, 0, s)
+        t.add_data(41, 1, s)
+        t.add_data(41, 2, s)
         plist = []
         for i in range(5):
             p = MockPeer()
@@ -105,4 +116,4 @@ class TorrentTest(unittest.TestCase):
             t.peer_map[((i, 2, 3, 4), 7890)] = p
         plist[0].remote_pieces.add(41)
         res = t.decide_request(plist[0])
-        self.assertEqual(res, (41, 8, 16384))
+        self.assertEqual(plist[0].local_request.pop(), (41, 8, 16384))

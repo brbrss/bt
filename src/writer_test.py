@@ -16,11 +16,11 @@ class WriterTest(unittest.TestCase):
     def test_keepalive(self):
         self.assertEqual(Writer().keep_alive(), b'\x00\x00\x00\x00')
 
-    def test_chock(self):
-        self.assertEqual(Writer().chock(), b'\x00\x00\x00\x01\x00')
+    def test_choke(self):
+        self.assertEqual(Writer().choke(), b'\x00\x00\x00\x01\x00')
 
-    def test_unchock(self):
-        self.assertEqual(Writer().unchock(), b'\x00\x00\x00\x01\x01')
+    def test_unchoke(self):
+        self.assertEqual(Writer().unchoke(), b'\x00\x00\x00\x01\x01')
 
     def test_bitfield(self):
         a = [False, True, True, True, False, False, False, True]

@@ -165,14 +165,16 @@ class Torrent(object):
         total = set()
         for k in self.peer_map:
             total = total.union(self.peer_map[k].local_request)
-        pending = [i for i in range(
-            len(self.content_buffer)) if self.content_buffer[i]]
+        # pending = [i for i in range(
+        #     len(self.content_buffer)) if self.content_buffer[i]]
+        pending = self.fm.get_partial()
         priority_pieces = peer.remote_pieces.intersection(set(pending))
         for i in priority_pieces:
             num_block = self._num_block(i)
             for k in range(num_block):
-                b1 = k in self.content_buffer[i]
+                #b1 = k in self.content_buffer[i]
                 block_len = self._block_length(i, k)
+                b1 = k in self.fm.buffer[i]
                 b2 = (i, k, block_len) in total
                 if not b1 and not b2:
                     return (i, k, block_len)
