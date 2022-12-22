@@ -13,7 +13,7 @@ class BtClient(object):
     def __init__(self):
         def cb(): return self.refresh_cb()
         self.conn_pool = ConnPool(cb)
-        self.torrent_list = {}
+        self.torrent_list: dict[bytes, Torrent] = {}
         #self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
         self.worker_thread = None
         return
@@ -31,8 +31,7 @@ class BtClient(object):
 
     def stop(self):
         for t in self.torrent_list:
-            t.server.close()
-
+            self.torrent_list[t].close()
         self.conn_pool.close()
 
     def check(self):
@@ -41,7 +40,8 @@ class BtClient(object):
         pass
 
     def refresh_cb(self):
-        for t in self.torrent_list:
+        for k in self.torrent_list:
+            t = self.torrent_list[k]
             self.refresh_torrent(t)
         return
 

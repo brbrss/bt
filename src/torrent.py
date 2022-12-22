@@ -73,10 +73,12 @@ class Torrent(object):
         self.server = Server(0)  # let os select port
         def f(): return self.server.start(server_cb)
         self.thread = threading.Thread(target=f)
-        self.tracker_get(self.announce)
+        self.tracker_get(self.announce, 'started')
 
     def close(self):
+        self.tracker_get(self.announce, 'stopped')
         self.fm.close()
+        self.server.stop()
 
     def req_query(self):
         data = {
@@ -89,10 +91,15 @@ class Torrent(object):
         }
         return data
 
-    def tracker_get(self, url):
+    def tracker_get(self, url, event=''):
         '''Send http request to tracker and store parsed response
         in self.tracker_map'''
-        data = urllib.parse.urlencode(self.req_query())
+        if event not in ['started', 'completed', 'stopped', '']:
+            raise RuntimeError('invalid event: ' + str(event))
+        query = self.req_query()
+        if event:
+            query['event'] = event
+        data = urllib.parse.urlencode(query)
         req = urllib.request.Request(url+'?'+data, method='GET')
         res = None
         try:
