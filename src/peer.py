@@ -126,7 +126,9 @@ class Peer(ConnOperator):
     # should only be called after select
 
     def set_choke(self, x):
-        self.want_choke = x
+        if self.local_choke == x:
+            return
+        self.local_choke = x
         if x:
             msg = self.writer.choke()
         else:
@@ -134,7 +136,9 @@ class Peer(ConnOperator):
         self.write_buf += msg
 
     def set_interest(self, x):
-        self.want_interest = x
+        if self.local_interested == x:
+            return
+        self.local_interested = x
         if x:
             msg = self.writer.interested()
         else:

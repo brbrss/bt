@@ -23,7 +23,7 @@ class ConnPool(object):
 
     def __init__(self, refresh_cb):
         self.sel = selectors.DefaultSelector()
-        self.conn_list = {}
+        self.conn_list: dict[int, ConnOperator] = {}
         self.timeout = 1
         self.queue = queue.Queue()
         self.flag_run = True
@@ -43,7 +43,6 @@ class ConnPool(object):
         self.conn_list[name] = connOperator
         if evmask:
             soc_key = self.sel.register(connOperator.conn, evmask)
-            connOperator.key = soc_key
 
     def register(self, connOperator):
         '''Takes in a ConnOperator, which should contain a connection.
@@ -56,24 +55,23 @@ class ConnPool(object):
     def purge_socket(self):
         '''Remove closed sockets'''
         for k in self.conn_list:
-            conn = self.conn_list[k].key.fileobj
+            conn = self.conn_list[k].conn
             if conn.fileno() == -1:  # only if socket is closed
                 self.sel.unregister(conn)
         self.conn_list = {
-            k: self.conn_list[k] for k in self.conn_list if self.conn_list[k].key.fileobj.fileno() != -1}
+            k: self.conn_list[k] for k in self.conn_list if self.conn_list[k].conn.fileno() != -1}
 
     def refresh_status(self):
         '''Refreshes read/write event mask for selector'''
         for k in self.conn_list:
             user = self.conn_list[k]
             newmask = mask(user)
-            if newmask != user.key.events:
-                if user.key.fd in self.sel.get_map():
+            if newmask != user.evmask:
+                if user.conn.fileno() in self.sel.get_map():
                     self.sel.unregister(user.conn)
-                    user.key = None
                 if newmask != 0:
-                    newkey = self.sel.modify(user.conn, newmask, user.key.data)
-                    user.key = newkey
+                    newkey = self.sel.register(user.conn, newmask, None)
+                    user.evmask = newkey.events
         return
 
     def refresh_timeout(self):
@@ -141,7 +139,7 @@ class ConnPool(object):
         '''Closes any registered socket and end loop in self.run()'''
         self.flag_run = False
         for k in self.conn_list:
-            conn = self.conn_list[k].key.fileobj
+            conn = self.conn_list[k].conn
             fileno = conn.fileno()
             print('stop ', fileno)
             self.sel.unregister(conn)

@@ -1,13 +1,14 @@
 import socket
 import time
 
+
 class ConnOperator(object):
     '''Class for handling a single connection
 
     Decides when to recv/send and what to do with data.
     '''
 
-    def __init__(self, conn):
+    def __init__(self, conn: socket.socket):
         self.conn = conn
         # data for use in socket.send
         self.write_buf = b''
@@ -20,6 +21,8 @@ class ConnOperator(object):
         self.timestamp = 0  # force refresh check on first time
         self.count = 0
         self.last_send_time = 0
+        # event mask for selector
+        self.evmask = 0
 
     def parse(self, buf):
         '''Parses and process data received from connection, should also do any
@@ -35,9 +38,9 @@ class ConnOperator(object):
             new_pos = conn.send(self.write_buf[self.write_pos:])
             self.last_send_time = time.time()
         except Exception:
-            if self.key.fileobj.fileno() != -1:
-                self.key.fileobj.shutdown(socket.SHUT_RDWR)
-                self.key.fileobj.close()
+            if self.conn.fileno() != -1:
+                self.conn.shutdown(socket.SHUT_RDWR)
+                self.conn.close()
             return
         self.write_buf = self.write_buf[new_pos:]
         self.write_pos = 0
