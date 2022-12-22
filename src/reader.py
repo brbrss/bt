@@ -103,7 +103,8 @@ class Reader(object):
         offset = 1+pstrlen
         reserve_bit = self.handshake_data[offset:offset+8]
         if reserve_bit != b"\x00" * 8:
-            self.on_badtype()
+            #self.on_badtype()
+            pass
         offset += 8
         info_hash = self.handshake_data[offset:offset+20]
         peerid = self.handshake_data[offset+20:offset+40]

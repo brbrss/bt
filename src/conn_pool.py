@@ -97,6 +97,8 @@ class ConnPool(object):
             if ev & selectors.EVENT_READ:
                 try:
                     data = conn.recv(1024)
+                    if data == b'':
+                        conn.close()
                     self.conn_list[key.fd].parse(data)
                 except Exception as err:
                     print(err)

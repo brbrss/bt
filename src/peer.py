@@ -74,6 +74,7 @@ class Peer(ConnOperator):
         self.u_total = 0
         self.rate_counter = RateCounter(10)  # use 10 second average
         # data
+        self.write_buf = b''
         # which pieces local has notified remote
         self.local_pieces: set[int] = set()
         self.remote_pieces: set[int] = set()  # which pieces remote has
@@ -84,7 +85,8 @@ class Peer(ConnOperator):
         self.writer = Writer()
         # init
         if is_initiating:
-            self.write_buf = self.writer.handshake(self.info_hash, self.local_id)
+            pass
+        self.write_buf += self.writer.handshake(self.info_hash, self.local_id)
 
     def parse(self, buf):
         self.remote_last_active_time = time.time()
