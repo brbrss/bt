@@ -1,0 +1,47 @@
+from btclient import BtClient
+from torrent import Torrent
+
+
+def print_torrent(t: Torrent):
+    n_complete = len(t.fm.complete_pieces)
+    n_incomplete = len([d for d in t.fm.buffer if d])
+    n_total = len(t.pieces_hash)
+    n_peer = len(t.peer_map)
+    print('length:',t.length,end='')
+    print('complete/incomplete/total:', n_complete,
+          '/', n_incomplete, '/', n_total, end='')
+    print(' peer:',n_peer)
+
+
+
+class Main(object):
+    def __init__(self, bt: BtClient):
+        self.bt = bt
+
+    def cmd(self, args):
+        if args[0] == 'status':
+            self.status(args)
+
+    def status(self, args):
+        n = len(self.bt.torrent_list)
+        print('Num of torrents: ', n)
+        for k in self.bt.torrent_list:
+            print_torrent(self.bt.torrent_list[k])
+        return
+
+
+if __name__ == '__main__':
+    bt = BtClient()
+    bt.start()
+    fp = './resource/gatsby2.torrent'
+    folder = './resource'
+    bt.create_torrent(fp, folder)
+
+    main = Main(bt)
+    while True:
+        s = input()
+        args = s.split(' ')
+        if args[0] == 'quit':
+            break
+        main.cmd(args)
+    print('program end')
