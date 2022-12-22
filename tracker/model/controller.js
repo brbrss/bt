@@ -114,6 +114,7 @@ controller.announce = function (query, ip) {
         query.port = Number(query.port);
         query.uploaded = Number(query.uploaded);
         query.downloaded = Number(query.downloaded);
+        query.info_hash = query.info_hash.toUpperCase()
 
         if (query.port % 1 !== 0) {
             throw Error('bad port num: ' + query.port);
