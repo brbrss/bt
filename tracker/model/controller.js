@@ -67,7 +67,7 @@ function onStart(query, ip) {
     const port = query.port;
     const info_hash = query.info_hash;
     const completed = query.left === '0';
-    const peerList = db.get(info_hash);
+    const peerList = db.get(info_hash, ip, port);
     const tracker_id = db.add(info_hash, ip, port, completed);
     const res = controller.response(peerList);
     res['tracker_id'] = tracker_id;
@@ -75,25 +75,28 @@ function onStart(query, ip) {
 }
 
 function onStop(query, ip) {
+    const port = query.port;
     db.remove(info_hash, ip, port);
     const res = controller.response([]);
     return ben.encode(res);
 }
 
 function onCompolete(query, ip) {
+    const port = query.port;
     const tracker_id = query.tracker_id;
     if (tracker_id) {
         db.complete(info_hash, tracker_id);
     }
-    const peerList = db.get(info_hash);
+    const peerList = db.get(info_hash, ip, port);
     const res = controller.response(peerList);
     return ben.encode(res);
 }
 
 function onQuery(query, ip) {
+    const port = query.port;
     const tracker_id = query.tracker_id;
     const completed = query.left === '0';
-    const peerList = db.get(query.info_hash);
+    const peerList = db.get(query.info_hash, ip, port);
     const new_id = db.add(query.info_hash, ip, query.port, completed);
 
     const res = controller.response(peerList);
@@ -104,7 +107,7 @@ function onQuery(query, ip) {
 }
 
 controller.announce = function (query, ip) {
-    if(Object.keys(query).length<1){
+    if (Object.keys(query).length < 1) {
         const res = {};
         res['failure reason'] = 'no query parameters';
         return ben.encode(res);

@@ -1,11 +1,11 @@
 
-function strname(ip, port) {
-    return ip + '>' + port; // > to prevent ipv6 colon confusion
-}
 
 class PeerDb {
     constructor() {
         this.db = {};
+    }
+    strname(ip, port) {
+        return ip + '>' + port; // > to prevent ipv6 colon confusion
     }
 
     add(info_hash, ip, port, completed) {
@@ -14,7 +14,7 @@ class PeerDb {
         } else {
             this.db[info_hash] = {};
         }
-        const name = strname(ip, port);
+        const name = this.strname(ip, port);
         this.db[info_hash][name] = entry;
         return name;
     }
@@ -24,16 +24,20 @@ class PeerDb {
         } else {
             this.db[info_hash] = {};
         }
-        const name = strname(ip, port);
+        const name = this.strname(ip, port);
         delete this.db[info_hash][name];
     }
-    get(info_hash) {
+    get(info_hash, ip, port) {
+        const reqname = this.strname(ip, port);
+
         if (info_hash in this.db) {
             const arr = []
             for (const name in this.db[info_hash]) {
-                const entry = this.db[info_hash][name];
-                const d = { ip: entry.ip, port: entry.port };
-                arr.push(d);
+                if (name != reqname) {
+                    const entry = this.db[info_hash][name];
+                    const d = { ip: entry.ip, port: entry.port };
+                    arr.push(d);
+                }
             }
             return arr;
         } else {
@@ -42,12 +46,12 @@ class PeerDb {
     }
     complete(info_hash, name) {
         if (info_hash in this.db) {
-            if (name in this.db[info_hash]){
+            if (name in this.db[info_hash]) {
                 this.db[info_hash][name].completed = true
             }
-        } 
+        }
     }
-    reset(){
+    reset() {
         this.db = {};
     }
 };
