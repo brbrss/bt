@@ -130,7 +130,7 @@ class Peer(ConnOperator):
         if x:
             msg = self.writer.choke()
         else:
-            msg = self.writer.unchock()
+            msg = self.writer.unchoke()
         self.write_buf += msg
 
     def set_interest(self, x):
