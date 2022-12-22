@@ -105,7 +105,7 @@ class ConnPool(object):
                 except Exception as err:
                     print('err on reading', err)
                     print(traceback.format_exc())
-                    print('socket closed', conn.getpeername())
+                    print('socket closed')
                     conn.close()
             if ev & selectors.EVENT_WRITE:
                 try:
@@ -113,7 +113,7 @@ class ConnPool(object):
                 except Exception as err:
                     print('err on writing', err)
                     print(traceback.format_exc())
-                    print('socket closed', conn.getpeername())
+                    print('socket closed')
                     conn.close()
 
     def check(self):

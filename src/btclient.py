@@ -7,6 +7,11 @@ import time
 import socket
 
 
+def peer_address(ip: tuple[int, int, int, int], port: int):
+    address = ('.'.join([str(i) for i in ip]), port)
+    return address
+
+
 class BtClient(object):
     '''One listening thread for each torrent, plus one socket pool thread'''
 
@@ -75,7 +80,8 @@ class BtClient(object):
     def _add_peer(self, t: Torrent, ip: tuple[int, int, int, int], port: int):
         '''Add connection to peer.
         Peer address should be from tracker'''
-        address = ('.'.join([str(i) for i in ip]), port)
+        #address = ('.'.join([str(i) for i in ip]), port)
+        address = peer_address(ip, port)
         conn = socket.socket()
         try:
             conn.connect(address)
@@ -92,8 +98,9 @@ class BtClient(object):
         for tracker_url in t.tracker_map:
             tracker = t.tracker_map[tracker_url]
             for pid in tracker.peers:
-                if pid not in t.peer_map:
-                    ip, port = pid
+                ip, port = pid
+                p_addr = peer_address(ip, port)
+                if p_addr not in t.peer_map:
                     self._add_peer(t, ip, port)
         return
 

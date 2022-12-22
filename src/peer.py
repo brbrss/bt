@@ -97,6 +97,7 @@ class Peer(ConnOperator):
         for i in range(num_pieces):
             if self.torrent.has_piece(i) and i not in self.local_pieces:
                 self.write_buf += self.writer.have(i)
+                self.local_pieces.add(i)
 
     def _check_keepalive(self):
         if time.time() - self.last_send_time > 60 and len(self.write_buf) == 0:

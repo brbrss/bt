@@ -4,3 +4,4 @@ try.py
 tracker/node_modules/*
 resource/test/*
 resource/fmtest/*
+dldata/*
