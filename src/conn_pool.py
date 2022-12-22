@@ -98,18 +98,22 @@ class ConnPool(object):
                 try:
                     data = conn.recv(1024)
                     if data == b'':
+                        print('socket', conn.fileno(),
+                              'is closing because recv returns empty')
                         conn.close()
                     self.conn_list[key.fd].parse(data)
                 except Exception as err:
-                    print(err)
+                    print('err on reading', err)
                     print(traceback.format_exc())
+                    print('socket closed', conn.getpeername())
                     conn.close()
             if ev & selectors.EVENT_WRITE:
                 try:
                     self.conn_list[key.fd].write(conn)
                 except Exception as err:
-                    print(err)
+                    print('err on writing', err)
                     print(traceback.format_exc())
+                    print('socket closed', conn.getpeername())
                     conn.close()
 
     def check(self):
