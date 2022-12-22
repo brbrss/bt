@@ -56,7 +56,7 @@ class FileManager(object):
     def __init__(self, torrent_info: dict, folder):
         # data
         self.piece_length = torrent_info['piece length']
-        self.pieces_hash = [torrent_info['pieces'][i*20:i*20+20]
+        self.pieces_hash = [bytes(torrent_info['pieces'][i*20:i*20+20], 'latin1')
                             for i in range(len(torrent_info['pieces']) // 20)]
         self.complete_pieces: set[int] = set()
         self.buffer: list[dict[int, bytes]] = [{} for i in self.pieces_hash]
