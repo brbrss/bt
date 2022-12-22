@@ -1,4 +1,4 @@
-
+import traceback
 import selectors
 import socket
 import time
@@ -131,6 +131,7 @@ class ConnPool(object):
                 self.check()
         except Exception as err:
             print('pool error ', err)
+            print(traceback.format_exc())
 
     def close(self):
         '''Closes any registered socket and end loop in self.run()'''
