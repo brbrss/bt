@@ -84,7 +84,7 @@ class Peer(ConnOperator):
         self.writer = Writer()
         # init
         if is_initiating:
-            self.write_buf = self.writer.handshake(self.info_hash, self.peerid)
+            self.write_buf = self.writer.handshake(self.info_hash, self.local_id)
 
     def parse(self, buf):
         self.remote_last_active_time = time.time()

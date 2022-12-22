@@ -52,6 +52,7 @@ class Torrent(object):
         self.length = None
         self.peerid = rand_id()
         self._read_meta(fp)
+        self.fresh: bool = True
         # data
         #self.content_buffer = [{} for i in self.pieces_hash]
         #self.content = [{} for i in self.pieces_hash]
@@ -73,6 +74,7 @@ class Torrent(object):
         self.server = Server(0)  # let os select port
         def f(): return self.server.start(server_cb)
         self.thread = threading.Thread(target=f)
+        self.thread.start()
         self.tracker_get(self.announce, 'started')
 
     def close(self):

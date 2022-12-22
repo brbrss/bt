@@ -21,13 +21,14 @@ class BtClient(object):
     def create_torrent(self, fp, folder):
         t = Torrent(fp, folder)
         self.torrent_list[t.info_hash] = t
-        def cb(s): return self.add_conn(s, self, False)
+        def cb(s): return self.add_conn(s, t, False)
         t.start(cb)
         return
 
     def start(self):
         def f(): return self.conn_pool.run()
         self.worker_thread = threading.Thread(target=f)
+        self.worker_thread.start()
 
     def stop(self):
         for t in self.torrent_list:
@@ -61,12 +62,18 @@ class BtClient(object):
         if tracker.last_time - now > tracker.interval:
             t.tracker_get(tracker_url)
             return True
+        if t.fresh:
+            t.fresh = False
+            return True
         return False
 
     def _add_peer(self, t: Torrent, ip: tuple[int, int, int, int], port: int):
-        address = ('.'.join(ip), port)
+        address = ('.'.join([str(i) for i in ip]), port)
         conn = socket.socket()
-        conn.connect(address)
+        try:
+            conn.connect(address)
+        except:
+            return
         p = Peer(conn, t, True)
         t.add_peer(ip, port, p)
 
