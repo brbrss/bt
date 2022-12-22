@@ -24,6 +24,8 @@ class Main(object):
             self.quit(args)
         elif args[0] == 'refresh':
             self.refresh(args)
+        else:
+            print('Unknown cmd:', args[0])
 
     def status(self, args):
         n = len(self.bt.torrent_list)

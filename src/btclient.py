@@ -47,12 +47,20 @@ class BtClient(object):
         return
 
     def refresh_torrent(self, t: Torrent):
-        fresh_tracker = self.refresh_tracker(t)
-        if fresh_tracker:
-            self.refresh_peer(t)
+        self.purge_peer(t)
+        self.refresh_tracker(t)
+        self.refresh_peer(t)
         self.refresh_status(t)
         self.refresh_request(t)
         return
+
+    def purge_peer(self, t: Torrent):
+        d = {}
+        for k in t.peer_map:
+            p = t.peer_map[k]
+            if p.conn.fileno() != -1:
+                d[k] = p
+        t.peer_map = d
 
     def refresh_tracker(self, t: Torrent):
         '''return whether is refreshed'''
@@ -62,22 +70,25 @@ class BtClient(object):
         if tracker.last_time - now > tracker.interval:
             t.tracker_get(tracker_url)
             return True
-        if t.fresh:
-            t.fresh = False
-            return True
         return False
 
     def _add_peer(self, t: Torrent, ip: tuple[int, int, int, int], port: int):
+        '''Add connection to peer.
+        Peer address should be from tracker'''
         address = ('.'.join([str(i) for i in ip]), port)
         conn = socket.socket()
         try:
             conn.connect(address)
         except:
             return
-        p = Peer(conn, t, True)
-        t.add_peer(ip, port, p)
+        #p = Peer(conn, t, True)
+        #t.add_peer(ip, port, p)
+        self.add_conn(conn, t, True)
 
     def refresh_peer(self, t: Torrent):
+        if not t.fresh:
+            return
+        t.fresh = False
         for tracker_url in t.tracker_map:
             tracker = t.tracker_map[tracker_url]
             for pid in tracker.peers:
@@ -113,6 +124,8 @@ class BtClient(object):
                 self._fill_req(t, peer)
         return
 
-    def add_conn(self, conn, torrent, is_initiating):
+    def add_conn(self, conn: socket.socket, torrent: Torrent, is_initiating):
+        ip, port = conn.getpeername()
         p = Peer(conn, torrent, is_initiating)
+        torrent.add_peer(ip, port, p)
         self.conn_pool.register(p)

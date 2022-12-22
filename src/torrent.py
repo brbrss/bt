@@ -115,6 +115,7 @@ class Torrent(object):
             res = {'err': err.__repr__()}
         self.lock_tracker.acquire()
         self.tracker_map[url] = tracker.Tracker(res)  # should not throw
+        self.fresh = True
         self.lock_tracker.release()
 
     def add_peer(self, ip, port, peer):

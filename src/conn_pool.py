@@ -100,12 +100,16 @@ class ConnPool(object):
                 try:
                     data = conn.recv(1024)
                     self.conn_list[key.fd].parse(data)
-                except:
+                except Exception as err:
+                    print(err)
+                    print(traceback.format_exc())
                     conn.close()
             if ev & selectors.EVENT_WRITE:
                 try:
                     self.conn_list[key.fd].write(conn)
-                except:
+                except Exception as err:
+                    print(err)
+                    print(traceback.format_exc())
                     conn.close()
 
     def check(self):
