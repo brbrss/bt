@@ -76,7 +76,8 @@ def gen_from_file(srcfp, dstfp, piece_length):
         raise RuntimeError('src does not exist')
 
     d = {}
-    d['announce'] = 'http://127.0.0.1:6969/announce'  # must contain announce
+    #d['announce'] = 'http://127.0.0.1:6969/announce'  # must contain announce
+    d['announce'] = 'http://localhost:6969/announce'  # must contain announce
     d['creation date'] = int(time.time())
     d['created by'] = 'gentorrent.py'
     d['info'] = gen_info_single(srcfp, piece_length)
@@ -89,17 +90,17 @@ def gen_from_file(srcfp, dstfp, piece_length):
 
 if __name__ == '__main__':
     print(os.getcwd())
-    # gen_from_file('./resource/gatsby.txt',
-    #               './resource/gatsby.torrent', 256*1024)
-    d = {}
-    d['announce'] = 'http://127.0.0.1:6969/announce'  # must contain announce
-    d['creation date'] = int(time.time())
-    d['created by'] = 'gentorrent.py'
-    src = ['./resource/hasthree/dracula.txt',
-           './resource/hasthree/grimm.txt', './resource/hasthree/warandpeace.txt']
-    d['info'] = gen_info_multi(src, 256*1024, 'hasthree')
-    s = ben.encode(d)
-    s = bytes(s, 'latin1')
-    g = open('./resource/hasthree.torrent', 'wb')
-    g.write(s)
-    g.close()
+    gen_from_file('./resource/gatsby.txt',
+                  './resource/gatsby2.torrent', 256*1024)
+    # d = {}
+    # d['announce'] = 'http://127.0.0.1:6969/announce'  # must contain announce
+    # d['creation date'] = int(time.time())
+    # d['created by'] = 'gentorrent.py'
+    # src = ['./resource/hasthree/dracula.txt',
+    #        './resource/hasthree/grimm.txt', './resource/hasthree/warandpeace.txt']
+    # d['info'] = gen_info_multi(src, 256*1024, 'hasthree')
+    # s = ben.encode(d)
+    # s = bytes(s, 'latin1')
+    # g = open('./resource/hasthree.torrent', 'wb')
+    # g.write(s)
+    # g.close()

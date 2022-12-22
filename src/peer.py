@@ -67,12 +67,15 @@ class Peer(ConnOperator):
         self.remote_id = None
         self.local_choke = True
         self.local_interested = False
-        self.last_active_time = time.time()
+        self.remote_last_active_time = time.time()
+        self.local_last_active_time = time.time()
         # stat
         self.d_total = 0
         self.u_total = 0
         self.rate_counter = RateCounter(10)  # use 10 second average
         # data
+        # which pieces local has notified remote
+        self.local_pieces: set[int] = set()
         self.remote_pieces: set[int] = set()  # which pieces remote has
         self.remote_request = set()
         self.local_request = set()
@@ -84,12 +87,35 @@ class Peer(ConnOperator):
             self.write_buf = self.writer.handshake(self.info_hash, self.peerid)
 
     def parse(self, buf):
-        self.last_active_time = time.time()
+        self.remote_last_active_time = time.time()
         self.reader.read(buf)
 
+    def _check_have(self):
+        num_pieces = len(self.torrent.pieces_hash)
+        for i in range(num_pieces):
+            if self.torrent.has_piece(i) and i not in self.local_pieces:
+                self.write_buf += self.writer.have(i)
+
+    def _check_keepalive(self):
+        if time.time() - self.last_send_time > 60 and len(self.write_buf) == 0:
+            self.write_buf += self.writer.keep_alive()
+
+    def _check_send_block(self):
+        if len(self.remote_request) == 0:
+            return
+        index, begin, length = self.remote_request.pop()
+        if self.torrent.has_piece(index):
+            block = self.torrent.get_data(index, begin, length)
+            self.write_buf += self.writer.piece(index, begin, block)
+            self.u_total += length
+    
     def add_to_write(self):
-        # xxx what to write?
-        pass
+        if self.write_buf:
+            return
+        self._check_send_block()
+        self._check_have()
+        self._check_keepalive()
+        return
 
     ### for use from Torrent class ###
 
@@ -184,7 +210,7 @@ class Peer(ConnOperator):
         # ignore
         return
 
-    def on_badtype(self):
+    def on_badtype(self, msg=''):
         '''Called when incoming data is not valid'''
         self.conn.shutdown(socket.SHUT_RDWR)
         self.conn.close()

@@ -1,5 +1,5 @@
 import socket
-
+import time
 
 class ConnOperator(object):
     '''Class for handling a single connection
@@ -14,11 +14,12 @@ class ConnOperator(object):
         # continue buffering from here
         self.write_pos = 0
         # check again in how many seconds
-        self.timeout = 0.1
+        self.timeout = 1
         # SelectorKey returned from selector
         self.key = None
         self.timestamp = 0  # force refresh check on first time
         self.count = 0
+        self.last_send_time = 0
 
     def parse(self, buf):
         '''Parses and process data received from connection, should also do any
@@ -28,8 +29,11 @@ class ConnOperator(object):
         return
 
     def write(self, conn):
+        if not self.write_buf:
+            return
         try:
             new_pos = conn.send(self.write_buf[self.write_pos:])
+            self.last_send_time = time.time()
         except Exception:
             if self.key.fileobj.fileno() != -1:
                 self.key.fileobj.shutdown(socket.SHUT_RDWR)
