@@ -104,14 +104,16 @@ class Peer(ConnOperator):
             self.write_buf += self.writer.keep_alive()
 
     def _check_send_block(self):
+        MAX_BUFFER_SIZE = 128*1024
         if len(self.remote_request) == 0:
             return
-        index, begin, length = self.remote_request.pop()
-        if self.torrent.has_piece(index):
-            block = self.torrent.get_data(index, begin, length)
-            self.write_buf += self.writer.piece(index, begin, block)
-            self.u_total += length
-    
+        while len(self.write_buf) < MAX_BUFFER_SIZE and len(self.remote_request) > 0:
+            index, begin, length = self.remote_request.pop()
+            if self.torrent.has_piece(index):
+                block = self.torrent.get_data(index, begin, length)
+                self.write_buf += self.writer.piece(index, begin, block)
+                self.u_total += length
+
     def add_to_write(self):
         if self.write_buf:
             return
