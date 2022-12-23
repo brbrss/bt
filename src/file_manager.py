@@ -107,6 +107,11 @@ class FileManager(object):
         '''list of partial pieces'''
         return [i for i in range(len(self.buffer)) if self.buffer[i]]
 
+    def cur_piece_length(self, piece_index):
+        start = piece_index * self.piece_length
+        end = min(self.cf.length(), start + self.piece_length)
+        return end - start
+
     def varify_piece(self, piece_index):
         '''returns True if good, False if hash does not match, list if not enough data
 
@@ -127,7 +132,8 @@ class FileManager(object):
             else:  # equal
                 s += d[k][kk-k:]
             next_pos = k + len(d[k])
-        if gap == [] and next_pos == self.piece_length:
+        pos_end = self.cur_piece_length(piece_index)
+        if gap == [] and next_pos == pos_end:
             sha1 = hashlib.sha1()
             sha1.update(s)
             hash = sha1.digest()

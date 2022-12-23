@@ -96,7 +96,7 @@ class ConnPool(object):
             conn = key.fileobj
             if ev & selectors.EVENT_READ:
                 try:
-                    data = conn.recv(1024)
+                    data = conn.recv(32*1024)
                     if data == b'':
                         print('socket', conn.fileno(),
                               'is closing because recv returns empty')

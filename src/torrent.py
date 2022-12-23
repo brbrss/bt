@@ -120,10 +120,10 @@ class Torrent(object):
         self.lock_tracker.release()
 
     def add_peer(self, ip, port, peer):
-        #self.lock_peer.acquire()
+        # self.lock_peer.acquire()
         print('add peer', port, 'on', time.time())
         self.peer_map[(ip, port)] = peer
-        #self.lock_peer.release()
+        # self.lock_peer.release()
 
     def add_data(self, piece_index, begin, data):
         return self.fm.add_block(piece_index, begin, data)
@@ -187,10 +187,11 @@ class Torrent(object):
             for k in range(num_block):
                 #b1 = k in self.content_buffer[i]
                 block_len = self._block_length(i, k)
-                b1 = k in self.fm.buffer[i]
-                b2 = (i, k, block_len) in total
+                begin = k * BLOCK_SIZE
+                b1 = begin in self.fm.buffer[i]
+                b2 = (i, begin, block_len) in total
                 if not b1 and not b2:
-                    return (i, k, block_len)
+                    return (i, begin, block_len)
         # no available pending piece
         possible_pieces = [
             i for i in peer.remote_pieces if not self.has_piece(i)]

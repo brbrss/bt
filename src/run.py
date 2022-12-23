@@ -34,19 +34,20 @@ class Main(object):
             print_torrent(self.bt.torrent_list[k])
         return
 
-    def quit(self, argx):
+    def quit(self, args):
         self.bt.stop()
 
     def refresh(self, args):
         for k in self.bt.torrent_list:
             t = self.bt.torrent_list[k]
             t.tracker_get(t.announce, '')
+        print('refreshed all trackers')
 
 
 if __name__ == '__main__':
     bt = BtClient()
     bt.start()
-    fp = './resource/hasthree.torrent'
+    fp = './dldata/hasthree.torrent'
     folder = './dldata'
     bt.create_torrent(fp, folder)
 
