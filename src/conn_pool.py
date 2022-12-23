@@ -76,11 +76,11 @@ class ConnPool(object):
 
     def refresh_timeout(self):
         if len(self.conn_list) == 0:
-            self.timeout = 10
+            self.timeout = 1
             return
         self.timeout = min(
             [self.conn_list[key].timeout for key in self.conn_list])
-        self.timeout = min(10, self.timeout)
+        self.timeout = min(1, self.timeout)
 
     def push_pending(self):
         while not self.queue.empty():

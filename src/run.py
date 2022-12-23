@@ -46,8 +46,8 @@ class Main(object):
 if __name__ == '__main__':
     bt = BtClient()
     bt.start()
-    fp = './resource/gatsby2.torrent'
-    folder = './resource'
+    fp = './resource/hasthree.torrent'
+    folder = './dldata'
     bt.create_torrent(fp, folder)
 
     main = Main(bt)

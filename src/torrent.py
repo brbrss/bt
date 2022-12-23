@@ -58,6 +58,7 @@ class Torrent(object):
         #self.content = [{} for i in self.pieces_hash]
         # remote data
         self.peer_map = {}
+        self.lock_peer = threading.Lock()
         self.tracker_map: dict[str, tracker.Tracker] = {}
         self.tracker_map[self.announce] = tracker.Tracker(
             {'err': 'not initialized'})
@@ -119,8 +120,10 @@ class Torrent(object):
         self.lock_tracker.release()
 
     def add_peer(self, ip, port, peer):
-        ''' xxx '''
+        #self.lock_peer.acquire()
+        print('add peer', port, 'on', time.time())
         self.peer_map[(ip, port)] = peer
+        #self.lock_peer.release()
 
     def add_data(self, piece_index, begin, data):
         return self.fm.add_block(piece_index, begin, data)

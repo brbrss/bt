@@ -19,7 +19,7 @@ class BtClient(object):
         def cb(): return self.refresh_cb()
         self.conn_pool = ConnPool(cb)
         self.torrent_list: dict[bytes, Torrent] = {}
-        #self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
+        self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
         self.worker_thread = None
         return
 
@@ -80,16 +80,15 @@ class BtClient(object):
     def _add_peer(self, t: Torrent, ip: tuple[int, int, int, int], port: int):
         '''Add connection to peer.
         Peer address should be from tracker'''
-        #address = ('.'.join([str(i) for i in ip]), port)
-        address = peer_address(ip, port)
-        conn = socket.socket()
-        try:
-            conn.connect(address)
-        except:
-            return
-        #p = Peer(conn, t, True)
-        #t.add_peer(ip, port, p)
-        self.add_conn(conn, t, True)
+        def _f():
+            address = peer_address(ip, port)
+            conn = socket.socket()
+            try:
+                conn.connect(address)
+            except:
+                return
+            self.add_conn(conn, t, True)
+        self.executor.submit(_f)
 
     def refresh_peer(self, t: Torrent):
         if not t.fresh:
@@ -133,6 +132,11 @@ class BtClient(object):
 
     def add_conn(self, conn: socket.socket, torrent: Torrent, is_initiating):
         ip, port = conn.getpeername()
-        p = Peer(conn, torrent, is_initiating)
-        torrent.add_peer(ip, port, p)
-        self.conn_pool.register(p)
+        torrent.lock_peer.acquire()
+        if (ip,port) not in torrent.peer_map:
+            p = Peer(conn, torrent, is_initiating)
+            torrent.add_peer(ip, port, p)
+            self.conn_pool.register(p)
+        else:
+            conn.close()
+        torrent.lock_peer.release()
