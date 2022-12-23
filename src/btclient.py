@@ -24,10 +24,13 @@ class BtClient(object):
         return
 
     def create_torrent(self, fp, folder):
-        t = Torrent(fp, folder)
-        self.torrent_list[t.info_hash] = t
-        def cb(s): return self.add_conn(s, t, False)
-        t.start(cb)
+        try:
+            t = Torrent(fp, folder)
+            self.torrent_list[t.info_hash] = t
+            def cb(s): return self.add_conn(s, t, False)
+            t.start(cb)
+        except Exception as err:
+            return str(err)
         return
 
     def start(self):

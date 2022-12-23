@@ -138,8 +138,10 @@ class ConnPool(object):
                     self.onestep()
                 self.check()
         except Exception as err:
-            print('pool error ', err)
-            print(traceback.format_exc())
+            #print('pool error ', err)
+            #print(traceback.format_exc())
+            pass
+        print('pool closed')
 
     def close(self):
         '''Closes any registered socket and end loop in self.run()'''
