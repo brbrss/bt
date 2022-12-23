@@ -16,7 +16,7 @@ class FileManagerTest(unittest.TestCase):
         d = {'files': [{'length': 13, 'path': ['haha', 'a.txt']}, {
             'length': 29, 'path': ['b.txt']}]}
         d['piece length'] = 256*1024
-        d['pieces'] = b'\x00'*20
+        d['pieces'] = '\x00'*20
         d['name'] = 'fmtest'
         folder = './resource'
         FileManager(d, folder)

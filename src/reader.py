@@ -53,7 +53,7 @@ class Reader(object):
     def _read(self, data, start):
         end = len(data)
         prefix_len = min(4 - len(self.prefix), end-start)
-        self.prefix += data[:prefix_len]
+        self.prefix += data[start:start+prefix_len]
         if prefix_len >= end - start:
             return end
         start += prefix_len
@@ -103,7 +103,7 @@ class Reader(object):
         offset = 1+pstrlen
         reserve_bit = self.handshake_data[offset:offset+8]
         if reserve_bit != b"\x00" * 8:
-            #self.on_badtype()
+            # self.on_badtype()
             pass
         offset += 8
         info_hash = self.handshake_data[offset:offset+20]

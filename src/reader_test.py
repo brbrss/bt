@@ -17,6 +17,10 @@ class MockReader(Reader):
     def on_unchoke(self):
         self.output.append(['unchoke'])
 
+    def on_interested(self):
+        self.output.append(['interested'])
+
+
     def on_bitfield(self, field):
         self.output.append(['bitfield', field])
 
@@ -73,6 +77,12 @@ class ReaderTest(unittest.TestCase):
         self.assertEqual(reader.output[2], ['bitfield', bf])
         self.assertEqual(reader.output[3], ['piece', 77, 13, block])
 
+    def test_many_2(self):
+        s = b'\x00\x00\x00\x01\x02\x00\x00\x00\r\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00@\x00\x00\x00\x00\r\x06\x00\x00\x00\x00\x00\x00@\x00\x00\x00@\x00\x00\x00\x00\r\x06\x00\x00\x00\x00\x00\x00\x80\x00\x00\x00@\x00\x00\x00\x00\r\x06\x00\x00\x00\x00\x00\x00\xc0\x00\x00\x00@\x00'
+        reader = MockReader()
+        reader.handshake_flag = True
+        reader.read(s)
+        self.assertEqual(reader.output[0][0],'interested')
 
 if __name__ == '__main__':
     unittest.main()
