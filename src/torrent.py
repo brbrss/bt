@@ -134,6 +134,9 @@ class Torrent(object):
     def get_data(self, piece_index, begin, length):
         return self.fm.get_block(piece_index, begin, length)
 
+    def is_complete(self):
+        return self.fm.is_complete()
+
     def decide_interest(self):
         self.last_interest_time = time.time()
         for k in self.peer_map:

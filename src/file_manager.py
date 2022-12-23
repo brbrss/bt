@@ -87,6 +87,9 @@ class FileManager(object):
             i += 1
         return
 
+    def is_complete(self):
+        return len(self.pieces_hash) == len(self.complete_pieces)
+
     def close(self):
         self.cf.close()
 
