@@ -125,7 +125,7 @@ class Peer(ConnOperator):
     ### for use from Torrent class ###
 
     def d_rate(self):
-        return self.rate_counter.rate
+        return self.rate_counter.avg()
 
     # no safety issue for commands
     # should only be called after select

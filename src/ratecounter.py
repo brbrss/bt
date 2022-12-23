@@ -27,4 +27,5 @@ class RateCounter(object):
         return self.rate
 
     def avg(self):
+        self.check()
         return self.rate
