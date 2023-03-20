@@ -1,7 +1,7 @@
 Implementation of BitTorrent client in Python.
 
 ## Running Client
-Run `python /src/run.py` to launch console. The console currently supports the following commands:
+Run `python ./src/run.py` to launch console. The console currently supports the following commands:
 
 `add [torrent_file_path] [download_to_path]`
 Add torrent to start download.
